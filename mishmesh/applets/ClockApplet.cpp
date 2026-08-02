@@ -203,8 +203,13 @@ int ClockApplet::renderStopwatch(Canvas& c, int y, int h) {
     }
   }
 
-  const char* hint = svc.swRunning() ? "Sel stop / up lap / hold reset"
-                    : ms ? "Sel resume / hold reset" : "Select to start";
+  char hint[40];
+  if (svc.swRunning())
+    snprintf(hint, sizeof(hint), "Sel stop / up lap / %s reset", holdWord());
+  else if (ms)
+    snprintf(hint, sizeof(hint), "Sel resume / %s reset", holdWord());
+  else
+    snprintf(hint, sizeof(hint), "Select to start");
   c.drawText(fontCaption(), c.width() / 2, y + h - capH, hint,
              DisplayDriver::LIGHT, TextAlign::Center);
   return svc.swRunning() ? 50 : 60000;
@@ -225,9 +230,13 @@ int ClockApplet::renderTimer(Canvas& c, int y, int h) {
     c.drawText(fontCaption(), c.width() / 2, ny + nh + 2, "Paused",
                DisplayDriver::LIGHT, TextAlign::Center);
 
-  const char* hint = svc.tmRunning() ? "Sel pause / hold reset"
-                    : paused ? "Sel resume / hold reset"
-                             : "Up/down set / sel start";
+  char hint[40];
+  if (svc.tmRunning())
+    snprintf(hint, sizeof(hint), "Sel pause / %s reset", holdWord());
+  else if (paused)
+    snprintf(hint, sizeof(hint), "Sel resume / %s reset", holdWord());
+  else
+    snprintf(hint, sizeof(hint), "Up/down set / sel start");
   c.drawText(fontCaption(), c.width() / 2, y + h - capH, hint,
              DisplayDriver::LIGHT, TextAlign::Center);
   return svc.tmRunning() ? 200 : 60000;
@@ -271,8 +280,10 @@ int ClockApplet::renderPomodoroIdle(Canvas& c, int y, int h) {
   c.drawText(fontCaption(), 82, y + 4, "FOCUS", DisplayDriver::LIGHT, TextAlign::Center);
   char buf[8]; snprintf(buf, sizeof(buf), "%u:00", s.pmFocusMin());
   c.drawText(fontNum(), 82, y + 16, buf, DisplayDriver::LIGHT, TextAlign::Center);
+  char hint[40];
+  snprintf(hint, sizeof(hint), "Sel start / %s setup", holdWord());
   c.drawText(fontCaption(), c.width() / 2, y + h - c.lineHeight(fontCaption()),
-             "Sel start / hold setup", DisplayDriver::LIGHT, TextAlign::Center);
+             hint, DisplayDriver::LIGHT, TextAlign::Center);
   return 1000;
 }
 
@@ -320,8 +331,9 @@ int ClockApplet::renderPomodoroRunning(Canvas& c, int y, int h) {
   snprintf(buf, sizeof(buf), "%02u:%02u", (unsigned)(sec / 60), (unsigned)(sec % 60));
   c.drawText(fontNum(), 82, y + 16, buf, DisplayDriver::LIGHT, TextAlign::Center);
 
-  const char* hint = s.pmRunning() ? "Sel pause / hold reset"
-                                    : "Sel start / hold reset";
+  char hint[40];
+  snprintf(hint, sizeof(hint), s.pmRunning() ? "Sel pause / %s reset" : "Sel start / %s reset",
+           holdWord());
   c.drawText(fontCaption(), c.width() / 2, y + h - capH, hint,
              DisplayDriver::LIGHT, TextAlign::Center);
   return s.pmRunning() ? 250 : 60000;

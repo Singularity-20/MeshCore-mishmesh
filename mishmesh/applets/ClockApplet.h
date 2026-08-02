@@ -47,6 +47,11 @@ private:
   enum Tab : int { TAB_STOPWATCH, TAB_TIMER, TAB_POMODORO, TAB_ALARM, TAB_WORLD, TAB_SETTINGS };
 
   bool settingsTab() const { return _tab == TAB_SETTINGS; }
+  // Hint text says "hold" for the physical button's long-press, but CardKB
+  // has no long-press of its own (see FORK_CHANGES.md) - Fn+Enter is the
+  // substitute, so swap the word in when a CardKB is attached. "ent" matches
+  // the CardKB's own printed key label rather than spelling out "enter".
+  const char* holdWord() const { return (_app && _app->cardKbSupported()) ? "fn+ent" : "hold"; }
   int  renderStopwatch(Canvas& c, int y, int h);
   int  renderTimer(Canvas& c, int y, int h);
   int  renderAlarm(Canvas& c, int y, int h);
