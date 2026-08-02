@@ -1,5 +1,6 @@
 // mishmesh/applets/CommandLineApplet.cpp
 #include <mishmesh/applets/CommandLineApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/core/StrUtil.h>
 #include <mishmesh/applets/AppletChrome.h>
 #include <mishmesh/core/AppletHost.h>
@@ -16,6 +17,7 @@ void CommandLineApplet::setTarget(const uint8_t* pubKey, const char* name) {
 
 void CommandLineApplet::onStart(AppletContext& ctx) {
   _host = ctx.host;
+  _app = ctx.app;
   _svc = ctx.contacts;
   _logCount = 0;
   _pending = false;
@@ -29,6 +31,7 @@ void CommandLineApplet::onStart(AppletContext& ctx) {
 // are preserved across tab switches (fresh only on hub open, via the hub calling onStart).
 void CommandLineApplet::onShow(AppletContext& ctx) {
   _host = ctx.host;
+  _app = ctx.app;
   _svc = ctx.contacts;
 }
 
@@ -139,9 +142,15 @@ bool CommandLineApplet::onInput(InputEvent ev) {
       return true;
     }
     _cmdBuf[0] = 0;
-    keypadApplet().configure(_cmdBuf, sizeof(_cmdBuf) - 1, "Command",
-                             &CommandLineApplet::onCmdDone, this);
-    if (_host) _host->push(&keypadApplet());
+    if (_app && _app->cardKbSupported()) {
+      textEntryApplet().configure(_cmdBuf, sizeof(_cmdBuf) - 1, "Command",
+                                  &CommandLineApplet::onCmdDone, this);
+      if (_host) _host->push(&textEntryApplet());
+    } else {
+      keypadApplet().configure(_cmdBuf, sizeof(_cmdBuf) - 1, "Command",
+                               &CommandLineApplet::onCmdDone, this);
+      if (_host) _host->push(&keypadApplet());
+    }
     return true;
   }
   return false;   // Back bubbles: host pops us back to the hub

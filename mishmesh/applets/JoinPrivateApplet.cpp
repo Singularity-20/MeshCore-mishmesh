@@ -1,5 +1,6 @@
 #include <mishmesh/applets/JoinPrivateApplet.h>
 #include <mishmesh/applets/KeypadApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/applets/AppletChrome.h>
 #include <mishmesh/core/AppletHost.h>
 #include <mishmesh/core/Canvas.h>
@@ -37,11 +38,21 @@ bool JoinPrivateApplet::onInput(InputEvent ev) {
   if (ev == InputEvent::Select) {
     int sel = _list.selected();
     if (sel == 0) {
-      keypadApplet().configure(_name, _nameCap - 1, "Name", nullptr, nullptr);
-      if (_host) _host->push(&keypadApplet());
+      if (_app && _app->cardKbSupported()) {
+        textEntryApplet().configure(_name, _nameCap - 1, "Name", nullptr, nullptr);
+        if (_host) _host->push(&textEntryApplet());
+      } else {
+        keypadApplet().configure(_name, _nameCap - 1, "Name", nullptr, nullptr);
+        if (_host) _host->push(&keypadApplet());
+      }
     } else if (sel == 1) {
-      keypadApplet().configure(_key, _keyCap - 1, "Key (32 hex)", nullptr, nullptr);
-      if (_host) _host->push(&keypadApplet());
+      if (_app && _app->cardKbSupported()) {
+        textEntryApplet().configure(_key, _keyCap - 1, "Key (32 hex)", nullptr, nullptr);
+        if (_host) _host->push(&textEntryApplet());
+      } else {
+        keypadApplet().configure(_key, _keyCap - 1, "Key (32 hex)", nullptr, nullptr);
+        if (_host) _host->push(&keypadApplet());
+      }
     } else {   // Join
       if (!_name || !_name[0]) { if (_host) _host->postToast("Name required"); return true; }
       if (!_keyValid || !_keyValid(_key)) { if (_host) _host->postToast("Key: 32 hex chars"); return true; }

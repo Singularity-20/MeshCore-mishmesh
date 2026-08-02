@@ -1,5 +1,6 @@
 #include <mishmesh/applets/settings/QuickRepliesPanel.h>
 #include <mishmesh/applets/KeypadApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/core/AppletHost.h>
 #include <mishmesh/core/Canvas.h>
 #include <mishmesh/text/Fonts.h>
@@ -14,6 +15,7 @@ uint16_t QuickRepliesPanel::Model::icon(int i) const {
 
 void QuickRepliesPanel::begin(AppletContext& ctx) {
   _host = ctx.host;
+  _app = ctx.app;
   _list.setRowHeight(14);
   _list.setModel(&_model);
   _list.resetSelection();
@@ -99,8 +101,13 @@ bool QuickRepliesPanel::onInput(InputEvent ev) {
         _editIdx = _itemIdx;
         strncpy(_editBuf, quickReplyStore().text(_itemIdx), QuickReplyStore::MAX_LEN);
         _editBuf[QuickReplyStore::MAX_LEN] = 0;
-        keypadApplet().configure(_editBuf, QuickReplyStore::MAX_LEN, "Reply", &onEditDone, this);
-        if (_host) _host->push(&keypadApplet());
+        if (_app && _app->cardKbSupported()) {
+          textEntryApplet().configure(_editBuf, QuickReplyStore::MAX_LEN, "Reply", &onEditDone, this);
+          if (_host) _host->push(&textEntryApplet());
+        } else {
+          keypadApplet().configure(_editBuf, QuickReplyStore::MAX_LEN, "Reply", &onEditDone, this);
+          if (_host) _host->push(&keypadApplet());
+        }
       } else if (a == 1) {                // Move
         _list.setSelected(_itemIdx);
         _moveOrig = _itemIdx;
@@ -122,8 +129,13 @@ bool QuickRepliesPanel::onInput(InputEvent ev) {
     if (_model.isAddRow(i)) {             // Add reply...
       _editIdx = -1;
       _editBuf[0] = 0;
-      keypadApplet().configure(_editBuf, QuickReplyStore::MAX_LEN, "Reply", &onEditDone, this);
-      if (_host) _host->push(&keypadApplet());
+      if (_app && _app->cardKbSupported()) {
+        textEntryApplet().configure(_editBuf, QuickReplyStore::MAX_LEN, "Reply", &onEditDone, this);
+        if (_host) _host->push(&textEntryApplet());
+      } else {
+        keypadApplet().configure(_editBuf, QuickReplyStore::MAX_LEN, "Reply", &onEditDone, this);
+        if (_host) _host->push(&keypadApplet());
+      }
     } else {                              // open action menu for this reply
       _itemIdx = i;
       static const char* const ACTION_LABELS[] = {"Edit", "Move", "Delete"};

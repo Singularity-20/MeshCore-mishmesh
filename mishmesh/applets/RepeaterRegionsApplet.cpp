@@ -1,5 +1,6 @@
 // mishmesh/applets/RepeaterRegionsApplet.cpp
 #include <mishmesh/applets/RepeaterRegionsApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/core/StrUtil.h>
 #include <mishmesh/applets/AppletChrome.h>
 #include <mishmesh/core/AppletHost.h>
@@ -138,9 +139,15 @@ bool RepeaterRegionsApplet::onInput(InputEvent ev) {
       _kpDelete = (a == 1);
       _scratch[0] = 0;
       _phase = Phase::Editing;
-      keypadApplet().configure(_scratch, NAME_CAP - 1, _kpDelete ? "Delete region" : "Region name",
-                               &RepeaterRegionsApplet::onKeypadDone, this);
-      if (_host) _host->push(&keypadApplet());
+      if (_app && _app->cardKbSupported()) {
+        textEntryApplet().configure(_scratch, NAME_CAP - 1, _kpDelete ? "Delete region" : "Region name",
+                                    &RepeaterRegionsApplet::onKeypadDone, this);
+        if (_host) _host->push(&textEntryApplet());
+      } else {
+        keypadApplet().configure(_scratch, NAME_CAP - 1, _kpDelete ? "Delete region" : "Region name",
+                                 &RepeaterRegionsApplet::onKeypadDone, this);
+        if (_host) _host->push(&keypadApplet());
+      }
     }
     return true;
   }

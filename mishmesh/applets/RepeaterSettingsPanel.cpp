@@ -3,6 +3,7 @@
 #include <mishmesh/core/StrUtil.h>
 #include <mishmesh/applets/AppletChrome.h>
 #include <mishmesh/applets/KeypadApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/core/AppletHost.h>
 #include <mishmesh/core/Canvas.h>
 #include <mishmesh/core/ContactsService.h>
@@ -84,11 +85,18 @@ void RepeaterSettingsPanel::editField(int i) {
     snprintf(_editTitle, sizeof(_editTitle), "%s (%ld-%ld)", f.label, (long)f.minVal, (long)f.maxVal);
   else { copyStr(_editTitle, sizeof(_editTitle), f.label); }
   char* buf = _engine.value(i);
-  if (f.kind == SettingFieldDef::Number || f.kind == SettingFieldDef::Float)
-    keypadApplet().configureNumeric(buf, FIELD_CAP - 1, _editTitle, &RepeaterSettingsPanel::onEditDone, this);
-  else
-    keypadApplet().configure(buf, FIELD_CAP - 1, _editTitle, &RepeaterSettingsPanel::onEditDone, this);
-  if (_host) _host->push(&keypadApplet());
+  if (_app && _app->cardKbSupported()) {
+    // Unrestricted (no digit-only lock) - onEditDone parses via atof/atoi either
+    // way, which safely ignores non-numeric input rather than crashing.
+    textEntryApplet().configure(buf, FIELD_CAP - 1, _editTitle, &RepeaterSettingsPanel::onEditDone, this);
+    if (_host) _host->push(&textEntryApplet());
+  } else {
+    if (f.kind == SettingFieldDef::Number || f.kind == SettingFieldDef::Float)
+      keypadApplet().configureNumeric(buf, FIELD_CAP - 1, _editTitle, &RepeaterSettingsPanel::onEditDone, this);
+    else
+      keypadApplet().configure(buf, FIELD_CAP - 1, _editTitle, &RepeaterSettingsPanel::onEditDone, this);
+    if (_host) _host->push(&keypadApplet());
+  }
 }
 
 void RepeaterSettingsPanel::openModal(int i) {

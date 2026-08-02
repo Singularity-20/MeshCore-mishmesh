@@ -1,4 +1,5 @@
 #include <mishmesh/applets/ContactDetailApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/core/StrUtil.h>
 #include <mishmesh/applets/ContactPermissionsApplet.h>
 #include <mishmesh/applets/MessageThreadApplet.h>
@@ -361,9 +362,15 @@ bool ContactDetailApplet::onInput(InputEvent ev) {
       case Rename:
         strncpy(_renameBuf, _name, sizeof(_renameBuf) - 1);   // seed with the current name
         _renameBuf[sizeof(_renameBuf) - 1] = 0;
-        keypadApplet().configure(_renameBuf, sizeof(_renameBuf) - 1, "Rename",
-                                 &ContactDetailApplet::onRenameDone, this);
-        if (_host) _host->push(&keypadApplet());
+        if (_app && _app->cardKbSupported()) {
+          textEntryApplet().configure(_renameBuf, sizeof(_renameBuf) - 1, "Rename",
+                                      &ContactDetailApplet::onRenameDone, this);
+          if (_host) _host->push(&textEntryApplet());
+        } else {
+          keypadApplet().configure(_renameBuf, sizeof(_renameBuf) - 1, "Rename",
+                                   &ContactDetailApplet::onRenameDone, this);
+          if (_host) _host->push(&keypadApplet());
+        }
         return true;
       case View: _viewing = true; return true;
       case Favourite:

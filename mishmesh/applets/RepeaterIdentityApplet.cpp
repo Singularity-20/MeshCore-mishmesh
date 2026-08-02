@@ -2,6 +2,7 @@
 #include <mishmesh/applets/RepeaterIdentityApplet.h>
 #include <mishmesh/applets/AppletChrome.h>
 #include <mishmesh/applets/KeypadApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/core/AppletHost.h>
 #include <mishmesh/core/Canvas.h>
 #include <mishmesh/core/ContactsService.h>
@@ -175,8 +176,13 @@ bool RepeaterIdentityApplet::onInput(InputEvent ev) {
     } else {
       _kpBuf[0] = 0; _seedBuf[0] = 0; _seedReady = false;
       _phase = Phase::Enter;
-      keypadApplet().configure(_kpBuf, 64, "Seed (64 hex)", &RepeaterIdentityApplet::onSeedConfirm, this);
-      if (_host) _host->push(&keypadApplet());
+      if (_app && _app->cardKbSupported()) {
+        textEntryApplet().configure(_kpBuf, 64, "Seed (64 hex)", &RepeaterIdentityApplet::onSeedConfirm, this);
+        if (_host) _host->push(&textEntryApplet());
+      } else {
+        keypadApplet().configure(_kpBuf, 64, "Seed (64 hex)", &RepeaterIdentityApplet::onSeedConfirm, this);
+        if (_host) _host->push(&keypadApplet());
+      }
     }
     return true;
   }

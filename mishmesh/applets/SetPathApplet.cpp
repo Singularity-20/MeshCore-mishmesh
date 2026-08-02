@@ -1,5 +1,6 @@
 #include <mishmesh/applets/SetPathApplet.h>
 #include <mishmesh/applets/KeypadApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/applets/AppletChrome.h>
 #include <mishmesh/core/AppletHost.h>
 #include <mishmesh/core/Canvas.h>
@@ -65,8 +66,13 @@ bool SetPathApplet::onInput(InputEvent ev) {
       _stepper.configure("Hash size", _hash ? *_hash : _hsMin, _hsMin, _hsMax, _hsLabel);
       _editingHash = true;
     } else if (sel == 1) {
-      keypadApplet().configure(_path, _pathCap - 1, "Path (hex)", nullptr, nullptr);
-      if (_host) _host->push(&keypadApplet());
+      if (_app && _app->cardKbSupported()) {
+        textEntryApplet().configure(_path, _pathCap - 1, "Path (hex)", nullptr, nullptr);
+        if (_host) _host->push(&textEntryApplet());
+      } else {
+        keypadApplet().configure(_path, _pathCap - 1, "Path (hex)", nullptr, nullptr);
+        if (_host) _host->push(&keypadApplet());
+      }
     } else {   // Save
       if (_submit && _submit(_ctx)) { if (_host) _host->pop(); }
     }

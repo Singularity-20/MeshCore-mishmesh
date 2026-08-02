@@ -4,6 +4,7 @@
 #include <mishmesh/applets/RadioValuePickerApplet.h>
 #include <mishmesh/applets/RadioPresetPickerApplet.h>
 #include <mishmesh/applets/KeypadApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/applets/RepeaterApplet.h>
 #include <mishmesh/core/AppletHost.h>
 #include <mishmesh/core/Canvas.h>
@@ -93,15 +94,27 @@ void RadioSettingsPanel::onTxDone(void* ctx, const char* text) {
 
 void RadioSettingsPanel::editFrequency() {
   snprintf(_scratch, sizeof(_scratch), "%g", _staged.freqMhz);
-  keypadApplet().configureNumeric(_scratch, sizeof(_scratch) - 1, "Frequency (MHz)",
-                                  &RadioSettingsPanel::onFreqDone, this);
-  if (_host) _host->push(&keypadApplet());
+  if (_app && _app->cardKbSupported()) {
+    textEntryApplet().configure(_scratch, sizeof(_scratch) - 1, "Frequency (MHz)",
+                                &RadioSettingsPanel::onFreqDone, this);
+    if (_host) _host->push(&textEntryApplet());
+  } else {
+    keypadApplet().configureNumeric(_scratch, sizeof(_scratch) - 1, "Frequency (MHz)",
+                                    &RadioSettingsPanel::onFreqDone, this);
+    if (_host) _host->push(&keypadApplet());
+  }
 }
 void RadioSettingsPanel::editTxPower() {
   snprintf(_scratch, sizeof(_scratch), "%d", (int)_staged.txPowerDbm);
-  keypadApplet().configureNumeric(_scratch, sizeof(_scratch) - 1, "TX power (dBm)",
-                                  &RadioSettingsPanel::onTxDone, this);
-  if (_host) _host->push(&keypadApplet());
+  if (_app && _app->cardKbSupported()) {
+    textEntryApplet().configure(_scratch, sizeof(_scratch) - 1, "TX power (dBm)",
+                                &RadioSettingsPanel::onTxDone, this);
+    if (_host) _host->push(&textEntryApplet());
+  } else {
+    keypadApplet().configureNumeric(_scratch, sizeof(_scratch) - 1, "TX power (dBm)",
+                                    &RadioSettingsPanel::onTxDone, this);
+    if (_host) _host->push(&keypadApplet());
+  }
 }
 
 bool RadioSettingsPanel::onInput(InputEvent ev) {

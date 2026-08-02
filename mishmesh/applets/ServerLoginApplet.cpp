@@ -1,5 +1,6 @@
 // mishmesh/applets/ServerLoginApplet.cpp
 #include <mishmesh/applets/ServerLoginApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/core/StrUtil.h>
 #include <mishmesh/core/AppletHost.h>
 #include <mishmesh/core/Canvas.h>
@@ -47,9 +48,15 @@ void ServerLoginApplet::promptPassword() {
   _submitted = false;
   _pwBuf[0] = 0;
   const char* title = (_mode == Mode::Repeater) ? "Repeater password" : "Room password";
-  keypadApplet().configure(_pwBuf, sizeof(_pwBuf) - 1, title,
-                           &ServerLoginApplet::onPwDone, this);
-  if (_host) _host->push(&keypadApplet());
+  if (_ctx && _ctx->app && _ctx->app->cardKbSupported()) {
+    textEntryApplet().configure(_pwBuf, sizeof(_pwBuf) - 1, title,
+                                &ServerLoginApplet::onPwDone, this);
+    if (_host) _host->push(&textEntryApplet());
+  } else {
+    keypadApplet().configure(_pwBuf, sizeof(_pwBuf) - 1, title,
+                             &ServerLoginApplet::onPwDone, this);
+    if (_host) _host->push(&keypadApplet());
+  }
 }
 
 void ServerLoginApplet::onPwDone(void* ctx, const char* text) {

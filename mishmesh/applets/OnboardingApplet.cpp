@@ -1,6 +1,7 @@
 #include <mishmesh/applets/OnboardingApplet.h>
 #include <mishmesh/applets/onboarding_logo.h>
 #include <mishmesh/applets/KeypadApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/applets/SetTimeApplet.h>
 #include <mishmesh/applets/TimezonePickerApplet.h>
 #include <mishmesh/applets/settings/RadioPresets.h>
@@ -88,8 +89,13 @@ void OnboardingApplet::activate(int row) {
   switch (cur()) {
     case Name:
       if (row == 0) {
-        keypadApplet().configure(_name, sizeof(_name) - 1, "Device name", &OnboardingApplet::onNameDone, this);
-        if (_host) _host->push(&keypadApplet());
+        if (_app && _app->cardKbSupported()) {
+          textEntryApplet().configure(_name, sizeof(_name) - 1, "Device name", &OnboardingApplet::onNameDone, this);
+          if (_host) _host->push(&textEntryApplet());
+        } else {
+          keypadApplet().configure(_name, sizeof(_name) - 1, "Device name", &OnboardingApplet::onNameDone, this);
+          if (_host) _host->push(&keypadApplet());
+        }
       } else advance();
       break;
     case Region:

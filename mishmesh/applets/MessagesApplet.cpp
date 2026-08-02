@@ -1,4 +1,5 @@
 #include "MessagesApplet.h"
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/applets/settings/MessagesSettingsPanel.h>
 #include "MessageThreadApplet.h"
 #include "ChatNotifyApplet.h"
@@ -267,9 +268,15 @@ bool MessagesApplet::applyResult(ChanResult res, const char* okToast) {
 
 void MessagesApplet::openCreatePrivate() {
   _chName[0] = 0;
-  keypadApplet().configure(_chName, sizeof(_chName) - 1, "Create private",
-                           &MessagesApplet::onCreatePrivateDone, this);
-  if (_host) _host->push(&keypadApplet());
+  if (_app && _app->cardKbSupported()) {
+    textEntryApplet().configure(_chName, sizeof(_chName) - 1, "Create private",
+                                &MessagesApplet::onCreatePrivateDone, this);
+    if (_host) _host->push(&textEntryApplet());
+  } else {
+    keypadApplet().configure(_chName, sizeof(_chName) - 1, "Create private",
+                             &MessagesApplet::onCreatePrivateDone, this);
+    if (_host) _host->push(&keypadApplet());
+  }
 }
 
 void MessagesApplet::openJoinPrivate() {
@@ -281,9 +288,15 @@ void MessagesApplet::openJoinPrivate() {
 
 void MessagesApplet::openJoinHashtag() {
   _chName[0] = 0;
-  keypadApplet().configure(_chName, sizeof(_chName) - 1, "Join hashtag",
-                           &MessagesApplet::onJoinHashtagDone, this);
-  if (_host) _host->push(&keypadApplet());
+  if (_app && _app->cardKbSupported()) {
+    textEntryApplet().configure(_chName, sizeof(_chName) - 1, "Join hashtag",
+                                &MessagesApplet::onJoinHashtagDone, this);
+    if (_host) _host->push(&textEntryApplet());
+  } else {
+    keypadApplet().configure(_chName, sizeof(_chName) - 1, "Join hashtag",
+                             &MessagesApplet::onJoinHashtagDone, this);
+    if (_host) _host->push(&keypadApplet());
+  }
 }
 
 void MessagesApplet::refreshRegion() {
@@ -296,9 +309,15 @@ void MessagesApplet::refreshRegion() {
 void MessagesApplet::openRegionEditor() {
   _regionBuf[0] = 0;
   if (_svc) _svc->region(_menuKey, _regionBuf, sizeof(_regionBuf));   // seed with current
-  keypadApplet().configure(_regionBuf, sizeof(_regionBuf) - 1, "Region",
-                           &MessagesApplet::onRegionDone, this);
-  if (_host) _host->push(&keypadApplet());
+  if (_app && _app->cardKbSupported()) {
+    textEntryApplet().configure(_regionBuf, sizeof(_regionBuf) - 1, "Region",
+                                &MessagesApplet::onRegionDone, this);
+    if (_host) _host->push(&textEntryApplet());
+  } else {
+    keypadApplet().configure(_regionBuf, sizeof(_regionBuf) - 1, "Region",
+                             &MessagesApplet::onRegionDone, this);
+    if (_host) _host->push(&keypadApplet());
+  }
 }
 
 void MessagesApplet::onRegionDone(void* ctx, const char* text) {

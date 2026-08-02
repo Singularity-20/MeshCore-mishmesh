@@ -678,9 +678,15 @@ void MessageThreadApplet::refreshRegion() {
 void MessageThreadApplet::openRegionEditor() {
   _regionBuf[0] = 0;
   if (_svc) _svc->region(_key, _regionBuf, sizeof(_regionBuf));   // seed with current
-  keypadApplet().configure(_regionBuf, sizeof(_regionBuf) - 1, "Region",
-                           &MessageThreadApplet::onRegionDone, this);
-  if (_host) _host->push(&keypadApplet());
+  if (_app && _app->cardKbSupported()) {
+    textEntryApplet().configure(_regionBuf, sizeof(_regionBuf) - 1, "Region",
+                                &MessageThreadApplet::onRegionDone, this);
+    if (_host) _host->push(&textEntryApplet());
+  } else {
+    keypadApplet().configure(_regionBuf, sizeof(_regionBuf) - 1, "Region",
+                             &MessageThreadApplet::onRegionDone, this);
+    if (_host) _host->push(&keypadApplet());
+  }
 }
 
 void MessageThreadApplet::onRegionDone(void* ctx, const char* text) {

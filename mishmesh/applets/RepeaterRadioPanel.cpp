@@ -7,6 +7,7 @@
 #include <mishmesh/applets/settings/RadioPresets.h>
 #include <mishmesh/applets/settings/RadioFormat.h>
 #include <mishmesh/applets/KeypadApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/core/AppletHost.h>
 #include <mishmesh/core/Canvas.h>
 #include <mishmesh/core/ContactsService.h>
@@ -178,8 +179,15 @@ bool RepeaterRadioPanel::onInput(InputEvent ev) {
       case 0: radioPresetPickerApplet().configure(this); _phase = Phase::Editing;
               if (_host) _host->push(&radioPresetPickerApplet()); return true;
       case 1: _editField = 1; _scratch[0] = 0;
-              keypadApplet().configureNumeric(_scratch, sizeof(_scratch) - 1, "Frequency (MHz)", &RepeaterRadioPanel::onEditDone, this);
-              _phase = Phase::Editing; if (_host) _host->push(&keypadApplet()); return true;
+              _phase = Phase::Editing;
+              if (_app && _app->cardKbSupported()) {
+                textEntryApplet().configure(_scratch, sizeof(_scratch) - 1, "Frequency (MHz)", &RepeaterRadioPanel::onEditDone, this);
+                if (_host) _host->push(&textEntryApplet());
+              } else {
+                keypadApplet().configureNumeric(_scratch, sizeof(_scratch) - 1, "Frequency (MHz)", &RepeaterRadioPanel::onEditDone, this);
+                if (_host) _host->push(&keypadApplet());
+              }
+              return true;
       case 2: radioValuePickerApplet().configure(this, RadioField::Bandwidth, "Bandwidth"); _phase = Phase::Editing;
               if (_host) _host->push(&radioValuePickerApplet()); return true;
       case 3: radioValuePickerApplet().configure(this, RadioField::SF, "Spreading factor"); _phase = Phase::Editing;
@@ -187,8 +195,15 @@ bool RepeaterRadioPanel::onInput(InputEvent ev) {
       case 4: radioValuePickerApplet().configure(this, RadioField::CR, "Coding rate"); _phase = Phase::Editing;
               if (_host) _host->push(&radioValuePickerApplet()); return true;
       case 5: _editField = 5; _scratch[0] = 0;
-              keypadApplet().configureNumeric(_scratch, sizeof(_scratch) - 1, "TX power (dBm)", &RepeaterRadioPanel::onEditDone, this);
-              _phase = Phase::Editing; if (_host) _host->push(&keypadApplet()); return true;
+              _phase = Phase::Editing;
+              if (_app && _app->cardKbSupported()) {
+                textEntryApplet().configure(_scratch, sizeof(_scratch) - 1, "TX power (dBm)", &RepeaterRadioPanel::onEditDone, this);
+                if (_host) _host->push(&textEntryApplet());
+              } else {
+                keypadApplet().configureNumeric(_scratch, sizeof(_scratch) - 1, "TX power (dBm)", &RepeaterRadioPanel::onEditDone, this);
+                if (_host) _host->push(&keypadApplet());
+              }
+              return true;
     }
     return true;
   }

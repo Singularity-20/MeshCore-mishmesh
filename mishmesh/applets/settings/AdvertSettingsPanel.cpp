@@ -1,5 +1,6 @@
 #include <mishmesh/applets/settings/AdvertSettingsPanel.h>
 #include <mishmesh/applets/KeypadApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/core/AppletHost.h>
 #include <mishmesh/core/Canvas.h>
 #include <mishmesh/core/NameValidation.h>
@@ -37,9 +38,15 @@ bool AdvertSettingsPanel::onInput(InputEvent ev) {
       const char* cur = _app->nodeName();
       strncpy(_nameBuf, cur ? cur : "", sizeof(_nameBuf) - 1);   // seed with current name
       _nameBuf[sizeof(_nameBuf) - 1] = 0;
-      keypadApplet().configure(_nameBuf, sizeof(_nameBuf) - 1, "Device name",
-                               &AdvertSettingsPanel::onNameDone, this);
-      if (_host) _host->push(&keypadApplet());
+      if (_app->cardKbSupported()) {
+        textEntryApplet().configure(_nameBuf, sizeof(_nameBuf) - 1, "Device name",
+                                    &AdvertSettingsPanel::onNameDone, this);
+        if (_host) _host->push(&textEntryApplet());
+      } else {
+        keypadApplet().configure(_nameBuf, sizeof(_nameBuf) - 1, "Device name",
+                                 &AdvertSettingsPanel::onNameDone, this);
+        if (_host) _host->push(&keypadApplet());
+      }
     } else {   // SharePosition
       _app->setShareLocationInAdvert(!_app->shareLocationInAdvert());
     }

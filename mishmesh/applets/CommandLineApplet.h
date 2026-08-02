@@ -40,6 +40,7 @@ private:
   static const int LOG_COLS  = ScrollText::LINE_LEN;   // keep the log line width == the view's, no phantom storage
 
   AppletHost*      _host = nullptr;
+  AppServices*     _app = nullptr;
   ContactsService* _svc = nullptr;
   uint8_t  _pub[6] = {0};
   char     _name[32] = {0};

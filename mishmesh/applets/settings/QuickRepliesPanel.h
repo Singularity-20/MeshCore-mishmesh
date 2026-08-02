@@ -40,6 +40,7 @@ private:
   StaticListModel _actionModel;
 
   AppletHost*   _host = nullptr;
+  AppServices*  _app = nullptr;
   ListMenu      _list;
   ListMenu      _actions;
   ConfirmDialog _confirm;
