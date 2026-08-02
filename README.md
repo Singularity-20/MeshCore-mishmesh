@@ -22,6 +22,10 @@ In theory we can support more devices with enough buttons.
 The underlying MeshCore firmware is mostly unchanged; see [About MeshCore](#about-meshcore)
 below.
 
+> This particular fork ([Singularity-20/MeshCore-mishmesh](https://github.com/Singularity-20/MeshCore-mishmesh))
+> adds CardKB (I2C keyboard) support on top of upstream mishmesh - see
+> [FORK_CHANGES.md](FORK_CHANGES.md) for what's changed here specifically.
+
 ### Screens
 
 <table>
