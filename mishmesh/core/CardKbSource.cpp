@@ -25,6 +25,21 @@ bool CardKbSource::poll(InputReport& out) {
   uint8_t raw = readRegister();
   uint32_t now = millis();
 
+  char ch = 0;
+  InputEvent ev = (raw != 0) ? mapCardKbByte(raw, ch) : InputEvent::None;
+
+  // Confirmed on hardware: the register reads back 0 again immediately after
+  // being read, even mid-hold, so there's no continuous "held" byte to poll -
+  // just a one-shot pulse per press. Stretch each directional press into a
+  // short synthetic hold (see heldMask()) so a frame-polled reader gets at
+  // least one true sample; this is independent of the edge/repeat gating
+  // below, which paces *dispatched* events, not live state.
+  if (ev == InputEvent::NavUp || ev == InputEvent::NavDown ||
+      ev == InputEvent::NavLeft || ev == InputEvent::NavRight) {
+    _pulseMask = maskBit(ev);
+    _pulseUntil = now + HELD_SUSTAIN_MS;
+  }
+
   if (raw == 0) {
     _pressed = false;
     return false;
@@ -42,8 +57,6 @@ bool CardKbSource::poll(InputReport& out) {
     return false;   // held, not yet due for a repeat
   }
 
-  char ch = 0;
-  InputEvent ev = mapCardKbByte(raw, ch);
   if (ev == InputEvent::None) return false;
   out.event = ev;
   out.ch = ch;

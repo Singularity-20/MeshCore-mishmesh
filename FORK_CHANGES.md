@@ -27,13 +27,24 @@ joystick - you don't need one to keep using the other.
   With no CardKB attached, every one of those screens behaves exactly as
   before.
 
-**Known issues found during hardware testing, not yet root-caused:**
-- The 2048 game's arrow keys don't move tiles.
-- The clock app's long-press "hold" actions (e.g. hold to reset a
-  stopwatch/timer) don't fire.
+## Fixed: 2048 didn't respond to CardKB arrow keys
 
-Neither depends on code this feature touched, as far as static review shows.
-Leading hypothesis: the CardKB input source does a real I2C read every main
-loop pass (not just while typing), and that added latency may be disrupting
-frame- or long-press-timing elsewhere - not yet confirmed against a
-no-CardKB-attached repro of the same bugs.
+Root cause (confirmed on hardware, not the original I2C-latency guess): the
+CardKB module's key register reads back `0` again immediately after being
+read over I2C, even while the key is still physically held down - there is no
+continuous "held" byte to observe, only a one-shot pulse per press. That's
+fine for menu navigation (which reacts to discrete press events), but 2048
+runs on an Arduboy compatibility bridge that polls a live held-button snapshot
+once per frame, and `CardKbSource` wasn't populating that snapshot at all
+(`heldMask()` was left at its default of "always 0").
+
+Fixed by having `CardKbSource` stretch each observed press into a short
+(150ms) synthetic hold window, long enough for the frame-polled bridge to
+sample a true value before it lapses back to `0` - which conveniently also
+satisfies the game's own debounce, which needs to see a release before the
+next move can register. One tile-move per key press, matching how most
+keyboard-driven tile games behave (not continuous scrolling while held).
+
+**Known issues found during hardware testing, not yet root-caused:**
+- The clock app's long-press "hold" actions (e.g. hold to reset a
+  stopwatch/timer) don't fire. Not yet investigated.
