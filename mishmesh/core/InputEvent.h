@@ -16,6 +16,7 @@ enum class InputEvent : uint8_t {
   Cancel,
   SelectLong,
   BackLong,
+  Char,   // free-text keystroke; see InputReport.ch
 };
 
 struct InputReport {

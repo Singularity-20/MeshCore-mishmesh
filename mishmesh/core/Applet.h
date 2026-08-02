@@ -126,6 +126,9 @@ struct AppServices {
   virtual bool gpsSupported() const { return false; }
   virtual bool gpsEnabled()   const { return false; }
   virtual void setGpsEnabled(bool) {}
+  // CardKB (I2C keyboard) presence, latched from a runtime boot-time probe -
+  // see UITask::begin(). Defaults keep the framework companion-agnostic.
+  virtual bool cardKbSupported() const { return false; }
   // Fix state, from the LocationProvider. Both report "no" while GPS is off
   // so a stale last fix never shows. Satellites: 0 = none/unknown.
   virtual bool gpsHasFix() const { return false; }
@@ -222,6 +225,12 @@ public:
 
   // Return true if the event was consumed; otherwise it bubbles up to the host.
   virtual bool onInput(InputEvent) { return false; }
+
+  // A free-text keystroke (InputEvent::Char) from a keyboard-style source.
+  // Opt-in, default no-op: most applets have no use for raw characters and
+  // only ever see nav/select/back through onInput(). Dispatched separately by
+  // AppletHost::dispatchChar() - see its comment for why.
+  virtual bool onChar(char) { return false; }
 
   // Whether the Back button should auto-repeat while held during this applet.
   // Default false: most screens must NOT repeat Back, or one hold would pop

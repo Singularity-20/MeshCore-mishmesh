@@ -142,6 +142,12 @@ void AppletHost::dispatch(InputEvent ev, bool repeat) {
   _dirty = true;
 }
 
+void AppletHost::dispatchChar(char ch) {
+  Applet* fg = foreground();
+  if (fg != nullptr) fg->onChar(ch);
+  _dirty = true;
+}
+
 void AppletHost::pumpInput(uint32_t now_ms) {
   for (int i = 0; i < _nsources; i++) {
     if (_sources[i] == nullptr) continue;
@@ -161,6 +167,16 @@ void AppletHost::pumpInput(uint32_t now_ms) {
         _slept_at = 0;
         _display->turnOn();   // first press only wakes; it isn't delivered
         _dirty = true;
+      } else if (rep.event == InputEvent::Char) {
+        // Bounce-coalescing below exists for noisy GPIO contact bounce, not a
+        // keyboard chip's own byte stream - it keys only on `event`, so every
+        // keystroke sharing the same Char event would make two different
+        // characters typed within INPUT_DEBOUNCE_MS look like one bouncing
+        // key, silently dropping the second. Route straight through instead.
+#ifdef MISHMESH_INPUT_PROFILE
+        if (!rep.repeat) _prof.recordDispatched();
+#endif
+        dispatchChar(rep.ch);
       } else {
         bool bounce = _input_seen && rep.event == _last_input_event &&
                       now_ms - _last_input_ms < INPUT_DEBOUNCE_MS;

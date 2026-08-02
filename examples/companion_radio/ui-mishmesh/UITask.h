@@ -15,6 +15,7 @@
 
 #include <mishmesh/core/AppletHost.h>
 #include <mishmesh/core/InputSources.h>
+#include <mishmesh/core/CardKbSource.h>
 #include <mishmesh/core/ContactsService.h>
 #include <mishmesh/applets/HomeApplet.h>
 #include <mishmesh/applets/AppMenuApplet.h>
@@ -165,6 +166,10 @@ class UITask : public AbstractUITask, public mishmesh::AppServices, public mishm
 #else
   mishmesh::ButtonGestureSource* _userBtn;
 #endif
+  // [mishmesh] CardKB (I2C keyboard): runtime-detected, see begin(). Null/false
+  // when no module answered the boot-time probe.
+  mishmesh::CardKbSource* _cardKb = nullptr;
+  bool _cardKbPresent = false;
 
 public:
   UITask(mesh::MainBoard* board, BaseSerialInterface* serial)
@@ -428,6 +433,8 @@ public:
     LocationProvider* lp = _sensors ? _sensors->getLocationProvider() : nullptr;
     return (lp && gpsEnabled()) ? (int)lp->satellitesCount() : 0;
   }
+  // [mishmesh] latched once at boot from a runtime I2C probe - see begin().
+  bool cardKbSupported() const override { return _cardKbPresent; }
   // [/mishmesh]
 
   // mishmesh::ContactsService

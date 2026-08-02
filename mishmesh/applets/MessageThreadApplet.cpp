@@ -4,6 +4,7 @@
 #include "ChatNotifyApplet.h"
 #include "ChannelShareApplet.h"
 #include <mishmesh/applets/KeypadApplet.h>
+#include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/core/StrUtil.h>
 #include <mishmesh/core/Canvas.h>
 #include <mishmesh/core/AppletHost.h>
@@ -647,9 +648,16 @@ void MessageThreadApplet::startCompose(const char* seed) {
   if (seed && seed[0]) { strncpy(_composeBuf, seed, KeypadApplet::KP_MAX);
                          _composeBuf[KeypadApplet::KP_MAX] = 0; }
   else _composeBuf[0] = 0;
-  keypadApplet().configure(_composeBuf, KeypadApplet::KP_MAX, "Message",
-                           &MessageThreadApplet::onComposeDone, this);
-  if (_host) _host->push(&keypadApplet());
+  // CardKB present: skip the multi-tap keypad for an open text box instead.
+  if (_app && _app->cardKbSupported()) {
+    textEntryApplet().configure(_composeBuf, KeypadApplet::KP_MAX, "Message",
+                                &MessageThreadApplet::onComposeDone, this);
+    if (_host) _host->push(&textEntryApplet());
+  } else {
+    keypadApplet().configure(_composeBuf, KeypadApplet::KP_MAX, "Message",
+                             &MessageThreadApplet::onComposeDone, this);
+    if (_host) _host->push(&keypadApplet());
+  }
 }
 
 void MessageThreadApplet::onComposeDone(void* ctx, const char* text) {

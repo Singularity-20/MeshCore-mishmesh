@@ -53,6 +53,11 @@ public:
   uint32_t nowMs() const { return _loop_now; }
 
   void dispatch(InputEvent ev, bool repeat = false);
+  // A free-text keystroke: hands it straight to the foreground applet's
+  // onChar(), no Back-pop fallback (a printed character has no "unconsumed"
+  // meaning the way Back does). Bypasses dispatch()'s bounce-coalescing too -
+  // see pumpInput()'s comment for why that debounce must not apply to Char.
+  void dispatchChar(char ch);
   void loop(uint32_t now_ms);
 
   // Transient feedback drawn over the foreground for ~1.4s. Outlives applet

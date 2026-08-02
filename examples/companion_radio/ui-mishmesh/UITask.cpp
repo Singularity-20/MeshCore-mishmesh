@@ -311,6 +311,22 @@ void UITask::begin(DisplayDriver* display, SensorManager* sensors, NodePrefs* no
   _userBtn->begin();
   _host->addSource(_userBtn);
 #endif
+
+  // [mishmesh] CardKB: runtime I2C probe, not a build flag - same firmware
+  // binary works whether or not the module is physically attached. Only
+  // registered as a source (and only claimed as a capability) on a successful
+  // probe, so an absent module costs nothing per loop.
+#if defined(ENV_PIN_SDA) && defined(ENV_PIN_SCL)
+  _cardKb = new mishmesh::CardKbSource();
+  if (_cardKb->begin(Wire1)) {
+    _host->addSource(_cardKb);
+    _cardKbPresent = true;
+  } else {
+    delete _cardKb;
+    _cardKb = nullptr;
+  }
+#endif
+
   _sound.play(mishmesh::sound::SoundId::BootJingle);   // [mishmesh]
 }
 

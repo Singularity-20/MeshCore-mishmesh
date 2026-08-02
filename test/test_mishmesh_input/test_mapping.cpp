@@ -10,20 +10,28 @@ using namespace mishmesh;
 
 namespace {
 // Releases queued events on poll(), as a real source would when drained.
+// `chq` is optional and only consulted for Char events (existing tests keep
+// assigning `q` directly with a braced InputEvent list, so its type/usage
+// stays unchanged; ch defaults to 0 when chq has nothing queued for a pop).
 struct QueueSource : InputSource {
   std::deque<InputEvent> q;
+  std::deque<char> chq;
   bool poll(InputReport& out) override {
     if (q.empty()) return false;
-    out.event = q.front(); out.ch = 0; q.pop_front();
+    out.event = q.front(); q.pop_front();
+    if (!chq.empty()) { out.ch = chq.front(); chq.pop_front(); }
+    else out.ch = 0;
     return true;
   }
 };
-// Records every event the host actually delivers.
+// Records every event/char the host actually delivers.
 struct RecordingApplet : Applet {
   std::vector<InputEvent> got;
+  std::vector<char> gotChars;
   RecordingApplet() : Applet("rec") {}
   int onRender(Canvas&) override { return 500; }
   bool onInput(InputEvent ev) override { got.push_back(ev); return true; }
+  bool onChar(char ch) override { gotChars.push_back(ch); return true; }
 };
 }  // namespace
 
@@ -84,6 +92,63 @@ TEST(InputDebounce, CoalescesBouncedRepeatButKeepsRealPresses) {
   src.q = {InputEvent::Select};
   host.loop(200);
   EXPECT_EQ(3u, app.got.size());
+}
+
+TEST(MapCardKbByte, ArrowsMapToNavEvents) {
+  char ch = 0;
+  EXPECT_EQ(InputEvent::NavUp,    mapCardKbByte(0xB5, ch));
+  EXPECT_EQ(InputEvent::NavDown,  mapCardKbByte(0xB6, ch));
+  EXPECT_EQ(InputEvent::NavLeft,  mapCardKbByte(0xB4, ch));
+  EXPECT_EQ(InputEvent::NavRight, mapCardKbByte(0xB7, ch));
+}
+
+TEST(MapCardKbByte, EnterAndEscMapToSelectAndBack) {
+  char ch = 0;
+  EXPECT_EQ(InputEvent::Select, mapCardKbByte(0x0D, ch));
+  EXPECT_EQ(InputEvent::Back,   mapCardKbByte(0x1B, ch));
+}
+
+TEST(MapCardKbByte, IdleByteIsNone) {
+  char ch = 0;
+  EXPECT_EQ(InputEvent::None, mapCardKbByte(0x00, ch));
+}
+
+TEST(MapCardKbByte, PrintableAndBackspaceComeBackAsChar) {
+  char ch = 0;
+  EXPECT_EQ(InputEvent::Char, mapCardKbByte('a', ch));
+  EXPECT_EQ('a', ch);
+
+  ch = 0;
+  EXPECT_EQ(InputEvent::Char, mapCardKbByte(0x08, ch));
+  EXPECT_EQ(0x08, ch);
+}
+
+// Regression test for the bug the Char-event path in pumpInput() fixes: the
+// bounce-coalescing window keys only on InputEvent, so two different
+// characters (same InputEvent::Char) typed within INPUT_DEBOUNCE_MS used to
+// look like the same key bouncing and the second was silently dropped.
+TEST(InputDebounce, CharEventsBypassBounceCoalescing) {
+  FakeDisplayDriver d;
+  RecordingApplet app;
+  AppletContext ctx;
+  AppletHost host(&d, ctx);
+  QueueSource src;
+  host.addSource(&src);
+  host.setRoot(&app);
+
+  src.q = {InputEvent::Char};
+  src.chq = {'a'};
+  host.loop(0);
+
+  // A different character just 5ms later - well inside INPUT_DEBOUNCE_MS -
+  // must still be delivered, unlike a real repeated NavDown/Select.
+  src.q = {InputEvent::Char};
+  src.chq = {'b'};
+  host.loop(5);
+
+  ASSERT_EQ(2u, app.gotChars.size());
+  EXPECT_EQ('a', app.gotChars[0]);
+  EXPECT_EQ('b', app.gotChars[1]);
 }
 
 int main(int argc, char** argv) {
