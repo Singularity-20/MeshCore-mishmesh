@@ -26,6 +26,16 @@ joystick - you don't need one to keep using the other.
   login, the admin CLI line, and more) opens a normal open text field instead.
   With no CardKB attached, every one of those screens behaves exactly as
   before.
+- **Fn+Enter for "hold" actions** (e.g. hold-to-reset on the clock screens).
+  The module has no way to report how long a key was physically held - it
+  only ever sends one discrete byte per press, confirmed on hardware (see
+  the 2048 fix below) - so there's no signal to time a long-press from the
+  way the physical button does. Fn+Enter is mapped to the same `SelectLong`
+  event instead: the module's own firmware treats Fn as a modifier with its
+  own hangtime (press Fn, then Enter - they don't need to overlap) and folds
+  it into a single distinct byte (`0xA3`) sent once, which fits the existing
+  one-byte-per-keystroke model with no new plumbing. Byte value confirmed
+  against the module's own firmware source, not just guessed.
 
 ## Fixed: 2048 didn't respond to CardKB arrow keys
 
@@ -44,7 +54,3 @@ sample a true value before it lapses back to `0` - which conveniently also
 satisfies the game's own debounce, which needs to see a release before the
 next move can register. One tile-move per key press, matching how most
 keyboard-driven tile games behave (not continuous scrolling while held).
-
-**Known issues found during hardware testing, not yet root-caused:**
-- The clock app's long-press "hold" actions (e.g. hold to reset a
-  stopwatch/timer) don't fire. Not yet investigated.

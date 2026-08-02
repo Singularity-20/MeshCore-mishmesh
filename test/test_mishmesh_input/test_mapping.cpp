@@ -108,6 +108,11 @@ TEST(MapCardKbByte, EnterAndEscMapToSelectAndBack) {
   EXPECT_EQ(InputEvent::Back,   mapCardKbByte(0x1B, ch));
 }
 
+TEST(MapCardKbByte, FnEnterMapsToSelectLong) {
+  char ch = 0;
+  EXPECT_EQ(InputEvent::SelectLong, mapCardKbByte(0xA3, ch));
+}
+
 TEST(MapCardKbByte, IdleByteIsNone) {
   char ch = 0;
   EXPECT_EQ(InputEvent::None, mapCardKbByte(0x00, ch));
