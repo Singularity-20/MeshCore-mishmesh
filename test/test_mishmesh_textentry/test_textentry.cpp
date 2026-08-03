@@ -169,6 +169,49 @@ TEST(TextEntryRender, CaretDrawnAsBarOnBlinkOnFrame) {
   EXPECT_TRUE(found);
 }
 
+TEST(TextEntryRender, CharCountHiddenByDefault) {
+  TextEntryApplet t;
+  char dst[8]; strcpy(dst, "hi");
+  t.configure(dst, 5, "Msg");   // showCharCount defaults to false
+  FakeDisplayDriver d;
+  Canvas c(&d, 0);
+  t.onRender(c);
+
+  FakeDisplayDriver ref;
+  Canvas rc(&ref, 0);
+  const mf_font_s* cf = fontCaption();
+  rc.drawText(cf, rc.width() - 2, rc.height() - 1 - rc.lineHeight(cf), "2/5",
+              DisplayDriver::LIGHT, TextAlign::Right);
+  ASSERT_FALSE(ref.fills.empty());   // sanity: the reference glyphs actually draw something
+
+  for (auto& rr : ref.fills)
+    for (auto& dr : d.fills)
+      EXPECT_FALSE(dr.x == rr.x && dr.y == rr.y && dr.w == rr.w && dr.h == rr.h);
+}
+
+TEST(TextEntryRender, CharCountShownMatchesExpectedGlyphs) {
+  TextEntryApplet t;
+  char dst[8]; strcpy(dst, "hi");
+  t.configure(dst, 5, "Msg", nullptr, nullptr, true);
+  FakeDisplayDriver d;
+  Canvas c(&d, 0);
+  t.onRender(c);
+
+  FakeDisplayDriver ref;
+  Canvas rc(&ref, 0);
+  const mf_font_s* cf = fontCaption();
+  rc.drawText(cf, rc.width() - 2, rc.height() - 1 - rc.lineHeight(cf), "2/5",
+              DisplayDriver::LIGHT, TextAlign::Right);
+  ASSERT_FALSE(ref.fills.empty());
+
+  for (auto& rr : ref.fills) {
+    bool found = false;
+    for (auto& dr : d.fills)
+      if (dr.x == rr.x && dr.y == rr.y && dr.w == rr.w && dr.h == rr.h) { found = true; break; }
+    EXPECT_TRUE(found);
+  }
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

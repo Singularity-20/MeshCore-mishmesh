@@ -17,9 +17,13 @@ class TextEntryApplet : public Applet {
 public:
   TextEntryApplet();
 
-  // Same seam as KeypadApplet::configure(); call before push().
+  // Same seam as KeypadApplet::configure(); call before push(). showCharCount
+  // reserves a bottom-right "n/cap" footer - only the real outbound message
+  // compose field (MessageThreadApplet::startCompose) sets this; every other
+  // free-text field (renames, settings, hex fields...) leaves it off.
   void configure(char* dst, uint16_t cap, const char* title,
-                 KeypadConfirmFn onConfirm = nullptr, void* ctx = nullptr);
+                 KeypadConfirmFn onConfirm = nullptr, void* ctx = nullptr,
+                 bool showCharCount = false);
 
   void onStart(AppletContext& ctx) override;
   int  onRender(Canvas& c) override;
@@ -46,6 +50,7 @@ private:
   void* _onConfirmCtx;
   uint16_t _len;
   uint16_t _cursor;      // insertion index, 0.._len
+  bool _showCharCount;
 
   ConfirmDialog _confirm;   // discard-changes guard, same pattern as KeypadApplet
   bool _confirming;

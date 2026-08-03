@@ -651,7 +651,7 @@ void MessageThreadApplet::startCompose(const char* seed) {
   // CardKB present: skip the multi-tap keypad for an open text box instead.
   if (_app && _app->cardKbSupported()) {
     textEntryApplet().configure(_composeBuf, KeypadApplet::KP_MAX, "Message",
-                                &MessageThreadApplet::onComposeDone, this);
+                                &MessageThreadApplet::onComposeDone, this, true);
     if (_host) _host->push(&textEntryApplet());
   } else {
     keypadApplet().configure(_composeBuf, KeypadApplet::KP_MAX, "Message",

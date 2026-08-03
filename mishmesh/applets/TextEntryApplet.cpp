@@ -3,13 +3,14 @@
 #include <mishmesh/core/Canvas.h>
 #include <mishmesh/text/Fonts.h>
 #include <string.h>
+#include <stdio.h>
 
 namespace mishmesh {
 
 TextEntryApplet::TextEntryApplet()
     : Applet("Text"), _ctx(nullptr), _buf(_own), _src(nullptr), _cap(KeypadApplet::KP_MAX),
       _title("Text"), _onConfirm(nullptr), _onConfirmCtx(nullptr), _len(0), _cursor(0),
-      _confirming(false) {
+      _showCharCount(false), _confirming(false) {
   _own[0] = 0;
 }
 
@@ -34,11 +35,13 @@ void TextEntryApplet::deleteCharAt(uint16_t pos) {
 }
 
 void TextEntryApplet::configure(char* dst, uint16_t cap, const char* title,
-                                KeypadConfirmFn onConfirm, void* ctx) {
+                                KeypadConfirmFn onConfirm, void* ctx,
+                                bool showCharCount) {
   _src = dst;                                  // written only on OK; never during editing
   _cap = cap < KeypadApplet::KP_MAX ? cap : KeypadApplet::KP_MAX;
   _title = title;
   _onConfirm = onConfirm; _onConfirmCtx = ctx;
+  _showCharCount = showCharCount;
   _buf = _own;                                 // seed the working copy from the source
   uint16_t n = 0;
   if (dst) while (dst[n] && n < _cap) { _own[n] = dst[n]; n++; }
@@ -69,38 +72,48 @@ void TextEntryApplet::confirmAndExit() {
 
 int TextEntryApplet::onRender(Canvas& c) {
   const Font* f = fontBody();
+  const Font* cf = fontCaption();
   int w = c.width(), h = c.height();
   const int padX = 2, padY = 1;
+  // Reserve a bottom strip for the "n/cap" counter so wrapped text/caret never
+  // run underneath it - only when this field actually wants one.
+  int footerH = _showCharCount ? c.lineHeight(cf) : 0;
 
   if (_len == 0 && _title && _title[0]) {
     // Empty buffer: show the configured title as a recessive placeholder, same
     // idiom as KeypadApplet::drawBuffer - it clears on the first keypress.
-    const Font* hf = fontCaption();
     int fh = c.fontHeight(f);
     c.fillRect(0, 0, 1, fh, DisplayDriver::LIGHT);
-    c.drawText(hf, 4, padY, _title, DisplayDriver::LIGHT);
-    return 500;
+    c.drawText(cf, 4, padY, _title, DisplayDriver::LIGHT);
+  } else {
+    // Cursor is a real caret bar drawn at its own pixel position (rather than a
+    // marker character woven into the text), located via measureWrappedCursor -
+    // which walks mcufont's own word-wrap pass, so line breaks still match
+    // drawTextWrapped exactly with no need to duplicate its line-breaking here.
+    int textW = w - 2 * padX;
+    int cx, cy;
+    c.measureWrappedCursor(f, textW, _buf, _cursor, cx, cy);
+
+    // Scroll so the cursor's line stays visible - same "draw at its natural
+    // position minus a scroll offset, let the canvas clip do the rest" idiom
+    // MessageThreadApplet uses for its message list.
+    int bottomLimit = h - padY - footerH;
+    int cursorBottomY = cy + c.lineHeight(f);
+    int scrollY = cursorBottomY > bottomLimit ? cursorBottomY - bottomLimit : 0;
+
+    c.drawTextWrapped(f, padX, padY - scrollY, textW, _buf, DisplayDriver::LIGHT);
+
+    if ((c.now() / 500) % 2) {   // blink-on half of the cycle
+      c.fillRect(padX + cx, padY + cy - scrollY, 1, c.fontHeight(f), DisplayDriver::LIGHT);
+    }
   }
 
-  // Cursor is a real caret bar drawn at its own pixel position (rather than a
-  // marker character woven into the text), located via measureWrappedCursor -
-  // which walks mcufont's own word-wrap pass, so line breaks still match
-  // drawTextWrapped exactly with no need to duplicate its line-breaking here.
-  int textW = w - 2 * padX;
-  int cx, cy;
-  c.measureWrappedCursor(f, textW, _buf, _cursor, cx, cy);
-
-  // Scroll so the cursor's line stays visible - same "draw at its natural
-  // position minus a scroll offset, let the canvas clip do the rest" idiom
-  // MessageThreadApplet uses for its message list.
-  int cursorBottomY = cy + c.lineHeight(f);
-  int scrollY = cursorBottomY > (h - padY) ? cursorBottomY - (h - padY) : 0;
-
-  c.drawTextWrapped(f, padX, padY - scrollY, textW, _buf, DisplayDriver::LIGHT);
-
-  if ((c.now() / 500) % 2) {   // blink-on half of the cycle
-    c.fillRect(padX + cx, padY + cy - scrollY, 1, c.fontHeight(f), DisplayDriver::LIGHT);
+  if (_showCharCount) {
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%u/%u", (unsigned)_len, (unsigned)_cap);
+    c.drawText(cf, w - padX, h - padY - footerH, buf, DisplayDriver::LIGHT, TextAlign::Right);
   }
+
   return 500;   // blink cadence
 }
 
