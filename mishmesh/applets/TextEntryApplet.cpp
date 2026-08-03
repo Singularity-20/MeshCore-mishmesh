@@ -71,6 +71,11 @@ void TextEntryApplet::confirmAndExit() {
 }
 
 int TextEntryApplet::onRender(Canvas& c) {
+  if (_confirming) {                       // discard dialog overlays the text screen
+    _confirm.draw(c, 0, 0, c.width(), c.height());
+    return 100;
+  }
+
   const Font* f = fontBody();
   const Font* cf = fontCaption();
   int w = c.width(), h = c.height();

@@ -141,6 +141,25 @@ TEST(TextEntry, DiscardConfirmedPopsWithoutCommitting) {
   EXPECT_STREQ("hi", buf);             // source untouched
 }
 
+TEST(TextEntryRender, DiscardConfirmDialogIsActuallyDrawn) {
+  // Regression test: onInput correctly enters the discard-confirm modal state
+  // (covered by TextEntry.BackWhenDirtyOpensDiscardConfirm), but that alone
+  // isn't enough - onRender must also draw it, or the dialog is invisible on
+  // hardware while still silently swallowing input (KeypadApplet's onRender
+  // has the equivalent `if (_confirming) { _confirm.draw(...); return; }`).
+  FakeDisplayDriver d; AppletContext ctx; AppletHost host(&d, ctx);
+  static TextEntryApplet root; host.setRoot(&root);
+  TextEntryApplet t;
+  char buf[KeypadApplet::KP_MAX + 1]; strcpy(buf, "hi");
+  t.configure(buf, KeypadApplet::KP_MAX, "T");
+  host.push(&t);
+  t.onChar('!');                  // dirty
+  host.dispatch(InputEvent::Back);   // opens discard confirm
+  Canvas c(&d, 0);
+  t.onRender(c);
+  EXPECT_FALSE(d.fills.empty() && d.rects.empty());   // dialog scrim/box actually drew something
+}
+
 TEST(TextEntryRender, NonEmptyTextIsInsetFromLeftEdge) {
   TextEntryApplet t; Harness h(&t);
   t.onChar('h'); t.onChar('i');
