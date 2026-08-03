@@ -7,6 +7,26 @@ and [CHANGELOG.md](CHANGELOG.md) for upstream mishmesh's own versioned
 release notes. This file only tracks what's changed in this fork, most
 recent first.
 
+## Fixed: text-entry caret misplaced by emoji in existing text
+
+`Canvas::measureWrappedCursor` (used by `TextEntryApplet`'s caret and by the
+character-counter/wrap logic) located the wrapped line under the cursor by
+treating mcufont's `mf_wordwrap` line-dispatch `count` as a byte count. It's
+actually a *character* count - identical to bytes for plain ASCII, which hid
+this for a long time, but wrong the moment any multi-byte UTF-8 codepoint
+(an emoji) appears in the text, since the cursor index is always a byte
+offset. Once the two counts diverged, the cursor's byte offset never matched
+any dispatched line, so the caret fell back to `(0, one line down)` and
+stayed there no matter what was typed.
+
+Reported as: renaming a contact whose name contains an emoji (e.g. synced in
+from a device that has the emoji atlas installed, even if this build
+doesn't) showed the caret stuck one line below the name, not moving as you
+typed. Would have hit any `TextEntryApplet` field given emoji content, not
+just contact rename. Fixed by computing each line's actual byte length by
+walking `count` codepoints forward instead of assuming `count` bytes.
+Hardware-confirmed.
+
 ## CardKB (I2C keyboard) support
 
 Adds a [CardKB](https://www.dfrobot.com/product-2496.html)-protocol I2C
