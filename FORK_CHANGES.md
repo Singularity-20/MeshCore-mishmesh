@@ -63,6 +63,15 @@ Ongoing polish pass on the CardKB open text box (see "Open text box instead
 of the flip-phone keypad" above), each piece hardware-tested individually
 unless noted:
 
+- **Inset margins and a real caret bar.** Text no longer sits flush against
+  the screen edges, and the blinking cursor is a drawn 1px bar at its own
+  pixel position instead of a `'_'`/`' '` character spliced into the string
+  each blink. Added `Canvas::measureWrappedCursor`, which maps a character
+  index to its pixel position inside word-wrapped text by walking mcufont's
+  own wrap pass - the shared primitive every item below builds on. Also
+  fixed a pre-existing bug where the old woven-marker cursor could make an
+  entire trailing line blink once the field scrolled past ~line 6, since the
+  marker character's width didn't match the real character it replaced.
 - **Character counter.** Message compose (only) shows a live "n/160" counter
   bottom-right while typing; every other free-text field (renames, settings,
   hex fields) is unaffected.
