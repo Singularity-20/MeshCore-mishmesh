@@ -177,7 +177,7 @@ bool RepeaterIdentityApplet::onInput(InputEvent ev) {
       _kpBuf[0] = 0; _seedBuf[0] = 0; _seedReady = false;
       _phase = Phase::Enter;
       if (_app && _app->cardKbSupported()) {
-        textEntryApplet().configure(_kpBuf, 64, "Seed (64 hex)", &RepeaterIdentityApplet::onSeedConfirm, this);
+        textEntryApplet().configure(_kpBuf, 64, "Enter seed (64 hex)", &RepeaterIdentityApplet::onSeedConfirm, this);
         if (_host) _host->push(&textEntryApplet());
       } else {
         keypadApplet().configure(_kpBuf, 64, "Seed (64 hex)", &RepeaterIdentityApplet::onSeedConfirm, this);

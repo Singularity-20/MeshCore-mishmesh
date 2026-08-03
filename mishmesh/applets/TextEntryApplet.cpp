@@ -165,6 +165,9 @@ int TextEntryApplet::onRender(Canvas& c) {
   if (_len == 0 && _title && _title[0]) {
     // Empty buffer: show the configured title as a recessive placeholder, same
     // idiom as KeypadApplet::drawBuffer - it clears on the first keypress.
+    // (A persistent always-on header was tried and reverted: once the field
+    // scrolled, wrapped text ran right through the header row - Canvas has no
+    // clip between them - and the always-on look wasn't well liked anyway.)
     int fh = c.fontHeight(f);
     c.fillRect(0, 0, 1, fh, DisplayDriver::LIGHT);
     c.drawText(cf, 4, padY, _title, DisplayDriver::LIGHT);

@@ -95,7 +95,7 @@ void RadioSettingsPanel::onTxDone(void* ctx, const char* text) {
 void RadioSettingsPanel::editFrequency() {
   snprintf(_scratch, sizeof(_scratch), "%g", _staged.freqMhz);
   if (_app && _app->cardKbSupported()) {
-    textEntryApplet().configure(_scratch, sizeof(_scratch) - 1, "Frequency (MHz)",
+    textEntryApplet().configure(_scratch, sizeof(_scratch) - 1, "Enter frequency (MHz)",
                                 &RadioSettingsPanel::onFreqDone, this);
     if (_host) _host->push(&textEntryApplet());
   } else {
@@ -107,7 +107,7 @@ void RadioSettingsPanel::editFrequency() {
 void RadioSettingsPanel::editTxPower() {
   snprintf(_scratch, sizeof(_scratch), "%d", (int)_staged.txPowerDbm);
   if (_app && _app->cardKbSupported()) {
-    textEntryApplet().configure(_scratch, sizeof(_scratch) - 1, "TX power (dBm)",
+    textEntryApplet().configure(_scratch, sizeof(_scratch) - 1, "Enter TX power (dBm)",
                                 &RadioSettingsPanel::onTxDone, this);
     if (_host) _host->push(&textEntryApplet());
   } else {

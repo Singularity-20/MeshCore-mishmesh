@@ -90,7 +90,7 @@ void OnboardingApplet::activate(int row) {
     case Name:
       if (row == 0) {
         if (_app && _app->cardKbSupported()) {
-          textEntryApplet().configure(_name, sizeof(_name) - 1, "Device name", &OnboardingApplet::onNameDone, this);
+          textEntryApplet().configure(_name, sizeof(_name) - 1, "Enter device name", &OnboardingApplet::onNameDone, this);
           if (_host) _host->push(&textEntryApplet());
         } else {
           keypadApplet().configure(_name, sizeof(_name) - 1, "Device name", &OnboardingApplet::onNameDone, this);

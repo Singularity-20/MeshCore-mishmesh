@@ -650,7 +650,7 @@ void MessageThreadApplet::startCompose(const char* seed) {
   else _composeBuf[0] = 0;
   // CardKB present: skip the multi-tap keypad for an open text box instead.
   if (_app && _app->cardKbSupported()) {
-    textEntryApplet().configure(_composeBuf, KeypadApplet::KP_MAX, "Message",
+    textEntryApplet().configure(_composeBuf, KeypadApplet::KP_MAX, "Enter message text",
                                 &MessageThreadApplet::onComposeDone, this, true);
     if (_host) _host->push(&textEntryApplet());
   } else {
@@ -679,7 +679,7 @@ void MessageThreadApplet::openRegionEditor() {
   _regionBuf[0] = 0;
   if (_svc) _svc->region(_key, _regionBuf, sizeof(_regionBuf));   // seed with current
   if (_app && _app->cardKbSupported()) {
-    textEntryApplet().configure(_regionBuf, sizeof(_regionBuf) - 1, "Region",
+    textEntryApplet().configure(_regionBuf, sizeof(_regionBuf) - 1, "Enter region name",
                                 &MessageThreadApplet::onRegionDone, this);
     if (_host) _host->push(&textEntryApplet());
   } else {

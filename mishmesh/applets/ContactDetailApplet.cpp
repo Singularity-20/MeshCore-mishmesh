@@ -363,7 +363,7 @@ bool ContactDetailApplet::onInput(InputEvent ev) {
         strncpy(_renameBuf, _name, sizeof(_renameBuf) - 1);   // seed with the current name
         _renameBuf[sizeof(_renameBuf) - 1] = 0;
         if (_app && _app->cardKbSupported()) {
-          textEntryApplet().configure(_renameBuf, sizeof(_renameBuf) - 1, "Rename",
+          textEntryApplet().configure(_renameBuf, sizeof(_renameBuf) - 1, "Enter new contact name",
                                       &ContactDetailApplet::onRenameDone, this);
           if (_host) _host->push(&textEntryApplet());
         } else {

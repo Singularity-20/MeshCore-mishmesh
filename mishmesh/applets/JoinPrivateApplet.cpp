@@ -39,7 +39,7 @@ bool JoinPrivateApplet::onInput(InputEvent ev) {
     int sel = _list.selected();
     if (sel == 0) {
       if (_app && _app->cardKbSupported()) {
-        textEntryApplet().configure(_name, _nameCap - 1, "Name", nullptr, nullptr);
+        textEntryApplet().configure(_name, _nameCap - 1, "Enter name", nullptr, nullptr);
         if (_host) _host->push(&textEntryApplet());
       } else {
         keypadApplet().configure(_name, _nameCap - 1, "Name", nullptr, nullptr);
@@ -47,7 +47,7 @@ bool JoinPrivateApplet::onInput(InputEvent ev) {
       }
     } else if (sel == 1) {
       if (_app && _app->cardKbSupported()) {
-        textEntryApplet().configure(_key, _keyCap - 1, "Key (32 hex)", nullptr, nullptr);
+        textEntryApplet().configure(_key, _keyCap - 1, "Enter key (32 hex)", nullptr, nullptr);
         if (_host) _host->push(&textEntryApplet());
       } else {
         keypadApplet().configure(_key, _keyCap - 1, "Key (32 hex)", nullptr, nullptr);

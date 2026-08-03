@@ -67,7 +67,7 @@ bool SetPathApplet::onInput(InputEvent ev) {
       _editingHash = true;
     } else if (sel == 1) {
       if (_app && _app->cardKbSupported()) {
-        textEntryApplet().configure(_path, _pathCap - 1, "Path (hex)", nullptr, nullptr);
+        textEntryApplet().configure(_path, _pathCap - 1, "Enter path (hex)", nullptr, nullptr);
         if (_host) _host->push(&textEntryApplet());
       } else {
         keypadApplet().configure(_path, _pathCap - 1, "Path (hex)", nullptr, nullptr);

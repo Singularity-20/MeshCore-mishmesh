@@ -143,7 +143,7 @@ bool CommandLineApplet::onInput(InputEvent ev) {
     }
     _cmdBuf[0] = 0;
     if (_app && _app->cardKbSupported()) {
-      textEntryApplet().configure(_cmdBuf, sizeof(_cmdBuf) - 1, "Command",
+      textEntryApplet().configure(_cmdBuf, sizeof(_cmdBuf) - 1, "Enter command",
                                   &CommandLineApplet::onCmdDone, this);
       if (_host) _host->push(&textEntryApplet());
     } else {

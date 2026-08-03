@@ -102,7 +102,7 @@ bool QuickRepliesPanel::onInput(InputEvent ev) {
         strncpy(_editBuf, quickReplyStore().text(_itemIdx), QuickReplyStore::MAX_LEN);
         _editBuf[QuickReplyStore::MAX_LEN] = 0;
         if (_app && _app->cardKbSupported()) {
-          textEntryApplet().configure(_editBuf, QuickReplyStore::MAX_LEN, "Reply", &onEditDone, this);
+          textEntryApplet().configure(_editBuf, QuickReplyStore::MAX_LEN, "Enter quick reply text", &onEditDone, this);
           if (_host) _host->push(&textEntryApplet());
         } else {
           keypadApplet().configure(_editBuf, QuickReplyStore::MAX_LEN, "Reply", &onEditDone, this);
@@ -130,7 +130,7 @@ bool QuickRepliesPanel::onInput(InputEvent ev) {
       _editIdx = -1;
       _editBuf[0] = 0;
       if (_app && _app->cardKbSupported()) {
-        textEntryApplet().configure(_editBuf, QuickReplyStore::MAX_LEN, "Reply", &onEditDone, this);
+        textEntryApplet().configure(_editBuf, QuickReplyStore::MAX_LEN, "Enter quick reply text", &onEditDone, this);
         if (_host) _host->push(&textEntryApplet());
       } else {
         keypadApplet().configure(_editBuf, QuickReplyStore::MAX_LEN, "Reply", &onEditDone, this);

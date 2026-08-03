@@ -181,7 +181,7 @@ bool RepeaterRadioPanel::onInput(InputEvent ev) {
       case 1: _editField = 1; _scratch[0] = 0;
               _phase = Phase::Editing;
               if (_app && _app->cardKbSupported()) {
-                textEntryApplet().configure(_scratch, sizeof(_scratch) - 1, "Frequency (MHz)", &RepeaterRadioPanel::onEditDone, this);
+                textEntryApplet().configure(_scratch, sizeof(_scratch) - 1, "Enter frequency (MHz)", &RepeaterRadioPanel::onEditDone, this);
                 if (_host) _host->push(&textEntryApplet());
               } else {
                 keypadApplet().configureNumeric(_scratch, sizeof(_scratch) - 1, "Frequency (MHz)", &RepeaterRadioPanel::onEditDone, this);
@@ -197,7 +197,7 @@ bool RepeaterRadioPanel::onInput(InputEvent ev) {
       case 5: _editField = 5; _scratch[0] = 0;
               _phase = Phase::Editing;
               if (_app && _app->cardKbSupported()) {
-                textEntryApplet().configure(_scratch, sizeof(_scratch) - 1, "TX power (dBm)", &RepeaterRadioPanel::onEditDone, this);
+                textEntryApplet().configure(_scratch, sizeof(_scratch) - 1, "Enter TX power (dBm)", &RepeaterRadioPanel::onEditDone, this);
                 if (_host) _host->push(&textEntryApplet());
               } else {
                 keypadApplet().configureNumeric(_scratch, sizeof(_scratch) - 1, "TX power (dBm)", &RepeaterRadioPanel::onEditDone, this);

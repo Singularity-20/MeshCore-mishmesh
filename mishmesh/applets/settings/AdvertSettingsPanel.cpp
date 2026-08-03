@@ -39,7 +39,7 @@ bool AdvertSettingsPanel::onInput(InputEvent ev) {
       strncpy(_nameBuf, cur ? cur : "", sizeof(_nameBuf) - 1);   // seed with current name
       _nameBuf[sizeof(_nameBuf) - 1] = 0;
       if (_app->cardKbSupported()) {
-        textEntryApplet().configure(_nameBuf, sizeof(_nameBuf) - 1, "Device name",
+        textEntryApplet().configure(_nameBuf, sizeof(_nameBuf) - 1, "Enter device name",
                                     &AdvertSettingsPanel::onNameDone, this);
         if (_host) _host->push(&textEntryApplet());
       } else {

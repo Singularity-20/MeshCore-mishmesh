@@ -269,7 +269,7 @@ bool MessagesApplet::applyResult(ChanResult res, const char* okToast) {
 void MessagesApplet::openCreatePrivate() {
   _chName[0] = 0;
   if (_app && _app->cardKbSupported()) {
-    textEntryApplet().configure(_chName, sizeof(_chName) - 1, "Create private",
+    textEntryApplet().configure(_chName, sizeof(_chName) - 1, "Enter private channel name",
                                 &MessagesApplet::onCreatePrivateDone, this);
     if (_host) _host->push(&textEntryApplet());
   } else {
@@ -289,7 +289,7 @@ void MessagesApplet::openJoinPrivate() {
 void MessagesApplet::openJoinHashtag() {
   _chName[0] = 0;
   if (_app && _app->cardKbSupported()) {
-    textEntryApplet().configure(_chName, sizeof(_chName) - 1, "Join hashtag",
+    textEntryApplet().configure(_chName, sizeof(_chName) - 1, "Enter hashtag channel name",
                                 &MessagesApplet::onJoinHashtagDone, this);
     if (_host) _host->push(&textEntryApplet());
   } else {
@@ -310,7 +310,7 @@ void MessagesApplet::openRegionEditor() {
   _regionBuf[0] = 0;
   if (_svc) _svc->region(_menuKey, _regionBuf, sizeof(_regionBuf));   // seed with current
   if (_app && _app->cardKbSupported()) {
-    textEntryApplet().configure(_regionBuf, sizeof(_regionBuf) - 1, "Region",
+    textEntryApplet().configure(_regionBuf, sizeof(_regionBuf) - 1, "Enter region name",
                                 &MessagesApplet::onRegionDone, this);
     if (_host) _host->push(&textEntryApplet());
   } else {

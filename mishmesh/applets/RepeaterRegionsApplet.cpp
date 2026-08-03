@@ -140,7 +140,8 @@ bool RepeaterRegionsApplet::onInput(InputEvent ev) {
       _scratch[0] = 0;
       _phase = Phase::Editing;
       if (_app && _app->cardKbSupported()) {
-        textEntryApplet().configure(_scratch, NAME_CAP - 1, _kpDelete ? "Delete region" : "Region name",
+        textEntryApplet().configure(_scratch, NAME_CAP - 1,
+                                    _kpDelete ? "Enter region name to delete" : "Enter region name",
                                     &RepeaterRegionsApplet::onKeypadDone, this);
         if (_host) _host->push(&textEntryApplet());
       } else {
