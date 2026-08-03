@@ -3,6 +3,7 @@
 #include <mishmesh/core/Applet.h>
 #include <mishmesh/applets/KeypadApplet.h>   // KeypadConfirmFn, KP_MAX - shared seam
 #include <mishmesh/widgets/ConfirmDialog.h>
+#include <mishmesh/widgets/GridView.h>
 
 namespace mishmesh {
 
@@ -10,10 +11,12 @@ namespace mishmesh {
 // CardKB-present counterpart to KeypadApplet's multi-tap grid. Same
 // configure()/push() seam as KeypadApplet so callers (e.g.
 // MessageThreadApplet::startCompose()) can pick either with a one-line branch
-// and share the same backing buffer. ASCII-only (CardKB's own protocol has no
-// multi-byte codepoints), so - unlike KeypadApplet - no UTF-8 boundary logic
-// is needed for cursor movement or insert/delete.
-class TextEntryApplet : public Applet {
+// and share the same backing buffer. Typed input is ASCII-only (CardKB's own
+// protocol has no multi-byte codepoints), so ordinary cursor movement/
+// insert/delete stay byte-based - but Tab opens an emoji picker (reusing
+// KeypadApplet's EmojiCatalog + GridView), and an inserted emoji is UTF-8, so
+// the picker path alone needs the codepoint-boundary helpers below.
+class TextEntryApplet : public Applet, public GridModel {
 public:
   TextEntryApplet();
 
@@ -29,6 +32,11 @@ public:
   int  onRender(Canvas& c) override;
   bool onInput(InputEvent ev) override;
   bool onChar(char ch) override;
+
+  // GridModel - the emoji picker's 3x4 page grid (Tab opens it; see onChar).
+  int rows() const override { return 3; }
+  int cols() const override { return 4; }
+  const char* cellLabel(int r, int c) const override;
 
   const char* text() const { return _buf; }
   uint16_t length() const { return _len; }
@@ -54,6 +62,23 @@ private:
 
   ConfirmDialog _confirm;   // discard-changes guard, same pattern as KeypadApplet
   bool _confirming;
+
+  // Emoji picker: Tab (onChar) opens it when the catalog is non-empty; modal
+  // like _confirming above, drawn via the shared drawModalChrome() box rather
+  // than KeypadApplet's own grid (this applet has no grid otherwise).
+  void insertString(uint16_t pos, const char* s);      // multi-byte insert at pos
+  uint16_t prevCodepoint(uint16_t pos) const;          // codepoint boundary before pos
+  uint16_t nextCodepoint(uint16_t pos) const;          // codepoint boundary at/after pos
+  void fillEmojiCells();
+  int  emojiPageCount() const;      // ceil(count/12); 0 when no catalog
+  void nextEmojiPage();             // wraps
+  void prevEmojiPage();             // wraps
+  void insertSelectedEmoji();
+
+  bool _pickingEmoji = false;
+  uint8_t _emojiPageIdx = 0;
+  char _emojiCells[12][5];          // UTF-8 of the current page's cells ("" = empty)
+  GridView _emojiGrid;
 };
 
 TextEntryApplet& textEntryApplet();

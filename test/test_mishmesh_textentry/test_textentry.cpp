@@ -4,6 +4,7 @@
 #include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/core/AppletHost.h>
 #include <mishmesh/core/Canvas.h>
+#include <mishmesh/core/EmojiCatalog.h>
 #include <mishmesh/text/Fonts.h>
 #include "FakeDisplayDriver.h"
 
@@ -147,6 +148,7 @@ TEST(TextEntryRender, DiscardConfirmDialogIsActuallyDrawn) {
   // isn't enough - onRender must also draw it, or the dialog is invisible on
   // hardware while still silently swallowing input (KeypadApplet's onRender
   // has the equivalent `if (_confirming) { _confirm.draw(...); return; }`).
+  setEmojiCatalog(nullptr, 0);   // deterministic regardless of test order
   FakeDisplayDriver d; AppletContext ctx; AppletHost host(&d, ctx);
   static TextEntryApplet root; host.setRoot(&root);
   TextEntryApplet t;
@@ -161,6 +163,7 @@ TEST(TextEntryRender, DiscardConfirmDialogIsActuallyDrawn) {
 }
 
 TEST(TextEntryRender, NonEmptyTextIsInsetFromLeftEdge) {
+  setEmojiCatalog(nullptr, 0);   // deterministic regardless of test order
   TextEntryApplet t; Harness h(&t);
   t.onChar('h'); t.onChar('i');
   Canvas c(&h.d, 0);   // now=0 -> blink-off half of the cycle, so no caret rect to filter out
@@ -170,6 +173,7 @@ TEST(TextEntryRender, NonEmptyTextIsInsetFromLeftEdge) {
 }
 
 TEST(TextEntryRender, CaretDrawnAsBarOnBlinkOnFrame) {
+  setEmojiCatalog(nullptr, 0);   // deterministic regardless of test order
   TextEntryApplet t; Harness h(&t);
   t.onChar('h'); t.onChar('i');
   const mf_font_s* f = fontBody();
@@ -189,6 +193,7 @@ TEST(TextEntryRender, CaretDrawnAsBarOnBlinkOnFrame) {
 }
 
 TEST(TextEntryRender, CharCountHiddenByDefault) {
+  setEmojiCatalog(nullptr, 0);   // deterministic regardless of test order
   TextEntryApplet t;
   char dst[8]; strcpy(dst, "hi");
   t.configure(dst, 5, "Msg");   // showCharCount defaults to false
@@ -209,6 +214,7 @@ TEST(TextEntryRender, CharCountHiddenByDefault) {
 }
 
 TEST(TextEntryRender, CharCountShownMatchesExpectedGlyphs) {
+  setEmojiCatalog(nullptr, 0);   // deterministic regardless of test order
   TextEntryApplet t;
   char dst[8]; strcpy(dst, "hi");
   t.configure(dst, 5, "Msg", nullptr, nullptr, true);
@@ -229,6 +235,87 @@ TEST(TextEntryRender, CharCountShownMatchesExpectedGlyphs) {
       if (dr.x == rr.x && dr.y == rr.y && dr.w == rr.w && dr.h == rr.h) { found = true; break; }
     EXPECT_TRUE(found);
   }
+}
+
+TEST(TextEntryEmoji, TabWithEmptyCatalogDoesNotOpenPicker) {
+  setEmojiCatalog(nullptr, 0);
+  TextEntryApplet t; Harness h(&t);
+  t.onChar(9);      // Tab, catalog empty -> no-op
+  t.onChar('x');    // if the picker had wrongly opened, typing would be swallowed
+  EXPECT_STREQ("x", t.text());
+}
+
+TEST(TextEntryEmoji, TabOpensPickerSelectInsertsEmojiAndCloses) {
+  static const uint32_t kCat[] = { 0x1F600 };
+  setEmojiCatalog(kCat, 1);
+  TextEntryApplet t; Harness h(&t);
+  t.onChar(9);                         // open picker
+  t.onInput(InputEvent::Select);       // insert the only cell (0,0)
+  char expected[5];
+  int n = KeypadApplet::utf8Encode(0x1F600, expected);
+  EXPECT_STREQ(expected, t.text());
+  EXPECT_EQ(n, t.cursor());
+  t.onChar('x');                       // picker closed -> normal typing resumes
+  EXPECT_EQ(n + 1, (int)t.length());
+  setEmojiCatalog(nullptr, 0);
+}
+
+TEST(TextEntryEmoji, BackWhilePickingCancelsWithoutInserting) {
+  static const uint32_t kCat[] = { 0x1F600 };
+  setEmojiCatalog(kCat, 1);
+  TextEntryApplet t; Harness h(&t);
+  t.onChar('h');
+  t.onChar(9);                    // open picker
+  t.onInput(InputEvent::Back);    // cancel
+  EXPECT_STREQ("h", t.text());    // unchanged
+  t.onChar('i');                  // picker closed -> typing resumes
+  EXPECT_STREQ("hi", t.text());
+  setEmojiCatalog(nullptr, 0);
+}
+
+TEST(TextEntryEmoji, NavAndBackspaceTreatEmojiAsOneUnit) {
+  static const uint32_t kCat[] = { 0x1F600 };   // 4-byte UTF-8 codepoint
+  setEmojiCatalog(kCat, 1);
+  TextEntryApplet t; Harness h(&t);
+  t.onChar('a');
+  t.onChar(9);
+  t.onInput(InputEvent::Select);       // "a<emoji>"
+  t.onChar('b');                       // "a<emoji>b"
+
+  char emoji[5];
+  int n = KeypadApplet::utf8Encode(0x1F600, emoji);
+  std::string expected = std::string("a") + emoji + "b";
+  EXPECT_EQ(expected, t.text());
+
+  uint16_t afterB = t.cursor();        // 1 + n + 1
+  t.onInput(InputEvent::NavLeft);      // step back over 'b'
+  EXPECT_EQ(afterB - 1, t.cursor());
+  t.onInput(InputEvent::NavLeft);      // step back over the whole emoji, not one byte
+  EXPECT_EQ(1, t.cursor());
+  t.onInput(InputEvent::NavRight);     // step forward over the whole emoji
+  EXPECT_EQ(1 + n, t.cursor());
+
+  t.onChar(8);                         // backspace removes the whole emoji, not one byte
+  EXPECT_STREQ("ab", t.text());
+  setEmojiCatalog(nullptr, 0);
+}
+
+TEST(TextEntryEmoji, PagingRevealsCellsBeyondFirstPage) {
+  static uint32_t kCat[13];
+  for (int i = 0; i < 13; i++) kCat[i] = 0x1F600 + i;   // 13 -> 2 pages (12 + 1)
+  setEmojiCatalog(kCat, 13);
+  TextEntryApplet t; Harness h(&t);
+  t.onChar(9);                              // open picker, page 1, focus (0,0)
+  for (int i = 0; i < 3; i++) t.onInput(InputEvent::NavRight);   // -> (0,3), last col
+  t.onInput(InputEvent::NavRight);          // at the right edge -> pages instead of wrapping
+  // Paging keeps the grid's focus position (same as KeypadApplet's emoji grid) -
+  // it doesn't reset to (0,0), so step back to column 0 on the new page.
+  for (int i = 0; i < 3; i++) t.onInput(InputEvent::NavLeft);
+  t.onInput(InputEvent::Select);            // select (0,0) of page 2 -> the 13th codepoint
+  char expected[5];
+  KeypadApplet::utf8Encode(kCat[12], expected);
+  EXPECT_STREQ(expected, t.text());
+  setEmojiCatalog(nullptr, 0);
 }
 
 int main(int argc, char** argv) {

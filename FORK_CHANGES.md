@@ -37,6 +37,34 @@ joystick - you don't need one to keep using the other.
   one-byte-per-keystroke model with no new plumbing. Byte value confirmed
   against the module's own firmware source, not just guessed.
 
+## Text-entry screen (TextEntryApplet) UI improvements
+
+Ongoing polish pass on the CardKB open text box (see "Open text box instead
+of the flip-phone keypad" above), each piece hardware-tested individually
+unless noted:
+
+- **Character counter.** Message compose (only) shows a live "n/160" counter
+  bottom-right while typing; every other free-text field (renames, settings,
+  hex fields) is unaffected.
+- **Fixed: discard-confirm dialog was invisible.** `onInput` already entered
+  the modal "Discard changes?" state on Esc when the buffer was dirty, but
+  `onRender` never actually drew it (unlike the equivalent path in the
+  flip-phone keypad), so the dialog opened invisibly while still silently
+  swallowing input - a second Esc would cancel it with no visible feedback.
+  Confirmed fixed on hardware.
+- **Emoji picker (Tab key).** Tab opens a modal emoji grid (reusing the
+  existing emoji catalog/atlas and a shared grid widget), Enter inserts the
+  selected glyph, Esc cancels; a "tab: emoji" hint shows bottom-left whenever
+  the catalog is non-empty. Cursor movement and backspace are now
+  codepoint-aware so an inserted (multi-byte UTF-8) emoji moves/deletes as
+  one unit instead of corrupting on a partial byte. **Not yet hardware
+  verified** - the licensed emoji atlas (`mishmesh/text/emoji-local/`) isn't
+  installed in the environment this was built in, so `emojiCatalogCount()`
+  is always 0 there and the picker/hint never actually render. Covered by
+  native unit tests against a synthetic fake catalog instead (open/close,
+  insert, cancel, codepoint-aware nav/backspace, paging). Needs a real
+  on-device pass once the atlas is available.
+
 ## Fixed: 2048 didn't respond to CardKB arrow keys
 
 Root cause: the CardKB module's key register reads back `0` again immediately after being

@@ -1,7 +1,9 @@
 #include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/core/AppletHost.h>
 #include <mishmesh/core/Canvas.h>
+#include <mishmesh/core/EmojiCatalog.h>
 #include <mishmesh/text/Fonts.h>
+#include <mishmesh/widgets/Modal.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -34,6 +36,70 @@ void TextEntryApplet::deleteCharAt(uint16_t pos) {
   _buf[_len] = 0;
 }
 
+void TextEntryApplet::insertString(uint16_t pos, const char* s) {
+  uint16_t sl = (uint16_t)strlen(s);
+  if (sl == 0 || (uint32_t)_len + sl > _cap) return;
+  memmove(_buf + pos + sl, _buf + pos, (size_t)(_len - pos + 1));  // move NUL too
+  memcpy(_buf + pos, s, sl);
+  _len = (uint16_t)(_len + sl);
+}
+
+// Codepoint-boundary helpers - only needed because the emoji picker can
+// insert multi-byte UTF-8 (typed input itself stays ASCII-only, see the
+// class comment); on plain ASCII these are equivalent to a plain +-1.
+uint16_t TextEntryApplet::prevCodepoint(uint16_t pos) const {
+  if (pos == 0) return 0;
+  uint16_t i = (uint16_t)(pos - 1);
+  while (i > 0 && ((unsigned char)_buf[i] & 0xC0) == 0x80) i--;    // skip continuation bytes
+  return i;
+}
+
+uint16_t TextEntryApplet::nextCodepoint(uint16_t pos) const {
+  if (pos >= _len) return _len;
+  unsigned char b = (unsigned char)_buf[pos];
+  uint16_t adv = (b < 0x80) ? 1 : ((b >> 5) == 0x6) ? 2
+               : ((b >> 4) == 0xE) ? 3 : ((b >> 3) == 0x1E) ? 4 : 1;
+  uint16_t n = (uint16_t)(pos + adv);
+  return n > _len ? _len : n;
+}
+
+const char* TextEntryApplet::cellLabel(int r, int c) const {
+  int i = r * 4 + c;
+  if (i < 0 || i >= 12) return "";
+  return _emojiCells[i];
+}
+
+void TextEntryApplet::fillEmojiCells() {
+  int cnt = emojiCatalogCount();
+  for (int i = 0; i < 12; i++) {
+    int idx = _emojiPageIdx * 12 + i;
+    if (idx < cnt) KeypadApplet::utf8Encode(emojiCatalogAt((uint16_t)idx), _emojiCells[i]);
+    else _emojiCells[i][0] = 0;
+  }
+}
+
+int TextEntryApplet::emojiPageCount() const {
+  int cnt = emojiCatalogCount();
+  return cnt > 0 ? (cnt + 11) / 12 : 0;
+}
+
+void TextEntryApplet::nextEmojiPage() {
+  int pc = emojiPageCount(); if (pc <= 1) return;
+  _emojiPageIdx = (uint8_t)((_emojiPageIdx + 1) % pc); fillEmojiCells();
+}
+
+void TextEntryApplet::prevEmojiPage() {
+  int pc = emojiPageCount(); if (pc <= 1) return;
+  _emojiPageIdx = (uint8_t)((_emojiPageIdx + pc - 1) % pc); fillEmojiCells();
+}
+
+void TextEntryApplet::insertSelectedEmoji() {
+  const char* s = cellLabel(_emojiGrid.focusedRow(), _emojiGrid.focusedCol());
+  if (!s || !s[0]) return;
+  insertString(_cursor, s);
+  _cursor = (uint16_t)(_cursor + strlen(s));
+}
+
 void TextEntryApplet::configure(char* dst, uint16_t cap, const char* title,
                                 KeypadConfirmFn onConfirm, void* ctx,
                                 bool showCharCount) {
@@ -55,6 +121,7 @@ void TextEntryApplet::onStart(AppletContext& ctx) {
   _buf = _own;
   _confirming = false;
   _confirm.reset();
+  _pickingEmoji = false;
 }
 
 void TextEntryApplet::confirmAndExit() {
@@ -75,14 +142,25 @@ int TextEntryApplet::onRender(Canvas& c) {
     _confirm.draw(c, 0, 0, c.width(), c.height());
     return 100;
   }
+  if (_pickingEmoji) {                     // emoji picker overlays the text screen
+    Canvas box = drawModalChrome(c);
+    char tag[8];
+    snprintf(tag, sizeof(tag), "%d/%d", _emojiPageIdx + 1, emojiPageCount());
+    box.drawText(fontCaption(), box.width() - 1, 1, tag, DisplayDriver::LIGHT, TextAlign::Right);
+    const int tagH = 9;
+    _emojiGrid.draw(box, 0, tagH, box.width(), box.height() - tagH);
+    return 100;
+  }
 
   const Font* f = fontBody();
   const Font* cf = fontCaption();
   int w = c.width(), h = c.height();
   const int padX = 2, padY = 1;
-  // Reserve a bottom strip for the "n/cap" counter so wrapped text/caret never
-  // run underneath it - only when this field actually wants one.
-  int footerH = _showCharCount ? c.lineHeight(cf) : 0;
+  // Reserve a bottom strip for the "n/cap" counter and/or the emoji hint so
+  // wrapped text/caret never run underneath them - only when at least one is
+  // actually shown for this field.
+  bool showEmojiHint = emojiCatalogCount() > 0;
+  int footerH = (_showCharCount || showEmojiHint) ? c.lineHeight(cf) : 0;
 
   if (_len == 0 && _title && _title[0]) {
     // Empty buffer: show the configured title as a recessive placeholder, same
@@ -118,11 +196,42 @@ int TextEntryApplet::onRender(Canvas& c) {
     snprintf(buf, sizeof(buf), "%u/%u", (unsigned)_len, (unsigned)_cap);
     c.drawText(cf, w - padX, h - padY - footerH, buf, DisplayDriver::LIGHT, TextAlign::Right);
   }
+  if (showEmojiHint) {
+    c.drawText(cf, padX, h - padY - footerH, "tab: emoji", DisplayDriver::LIGHT);
+  }
 
   return 500;   // blink cadence
 }
 
 bool TextEntryApplet::onInput(InputEvent ev) {
+  if (_pickingEmoji) {                     // emoji picker is modal: route nav/select to it
+    switch (ev) {
+      case InputEvent::NavUp:
+      case InputEvent::NavDown:
+        _emojiGrid.onInput(ev);
+        return true;
+      case InputEvent::NavLeft:
+      case InputEvent::NavRight: {
+        // Edge-of-page nav pages instead of wrapping in place, same wiring as
+        // KeypadApplet's emoji grid.
+        int nc = _emojiGrid.focusedCol();
+        if (ev == InputEvent::NavRight && nc == cols() - 1) { nextEmojiPage(); return true; }
+        if (ev == InputEvent::NavLeft  && nc == 0)          { prevEmojiPage(); return true; }
+        _emojiGrid.onInput(ev);
+        return true;
+      }
+      case InputEvent::Select:
+        insertSelectedEmoji();
+        _pickingEmoji = false;
+        return true;
+      case InputEvent::Back:
+      case InputEvent::BackLong:
+        _pickingEmoji = false;             // cancel, no insert
+        return true;
+      default:
+        return true;                       // swallow everything else while picking
+    }
+  }
   if (_confirming) {                       // discard dialog is modal: route input to it
     if (_confirm.onInput(ev)) {
       ConfirmResult r = _confirm.result();
@@ -136,10 +245,10 @@ bool TextEntryApplet::onInput(InputEvent ev) {
   }
   switch (ev) {
     case InputEvent::NavLeft:
-      if (_cursor > 0) _cursor--;
+      _cursor = prevCodepoint(_cursor);
       return true;
     case InputEvent::NavRight:
-      if (_cursor < _len) _cursor++;
+      _cursor = nextCodepoint(_cursor);
       return true;
     case InputEvent::Select:
       confirmAndExit();
@@ -154,8 +263,21 @@ bool TextEntryApplet::onInput(InputEvent ev) {
 }
 
 bool TextEntryApplet::onChar(char ch) {
-  if (ch == 8) {                            // Backspace: remove before cursor
-    if (_cursor > 0) { deleteCharAt(_cursor - 1); _cursor--; }
+  if (_confirming || _pickingEmoji) return true;   // modal state: swallow raw typing
+  if (ch == 9) {                            // Tab: open emoji picker (no-op if catalog is empty)
+    if (emojiCatalogCount() > 0) {
+      _pickingEmoji = true;
+      _emojiPageIdx = 0;
+      fillEmojiCells();
+      _emojiGrid.setModel(this);
+    }
+    return true;
+  }
+  if (ch == 8) {                            // Backspace: remove the codepoint before cursor
+    if (_cursor > 0) {
+      uint16_t p = prevCodepoint(_cursor);
+      while (_cursor > p) { deleteCharAt(_cursor - 1); _cursor--; }
+    }
     return true;
   }
   if (ch >= 0x20 && ch < 0x7F) {             // printable ASCII
