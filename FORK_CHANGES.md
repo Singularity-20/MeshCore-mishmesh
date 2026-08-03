@@ -73,6 +73,10 @@ unless noted:
   through the header row (no clip existed between them), and the
   always-on look wasn't well liked regardless. Kept the reworded
   placeholder text; dropped the persistent-header rendering change.
+- **Thin border.** A 1px frame around the whole screen, square corners,
+  drawn last so it overlays content - matching the existing `Card`/`Modal`
+  convention. Confirmed on hardware, no interaction issues with the
+  counter, emoji hint, caret, or scrolling.
 
 ## Fixed: 2048 didn't respond to CardKB arrow keys
 

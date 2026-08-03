@@ -203,6 +203,10 @@ int TextEntryApplet::onRender(Canvas& c) {
     c.drawText(cf, padX, h - padY - footerH, "tab: emoji", DisplayDriver::LIGHT);
   }
 
+  // Thin frame around the whole screen, drawn last so it overlays content -
+  // same square-corner convention as Card/Modal (drawModalChrome).
+  c.drawRect(0, 0, w, h, DisplayDriver::LIGHT);
+
   return 500;   // blink cadence
 }
 

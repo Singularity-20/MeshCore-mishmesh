@@ -162,6 +162,19 @@ TEST(TextEntryRender, DiscardConfirmDialogIsActuallyDrawn) {
   EXPECT_FALSE(d.fills.empty() && d.rects.empty());   // dialog scrim/box actually drew something
 }
 
+TEST(TextEntryRender, DrawsFullScreenBorder) {
+  setEmojiCatalog(nullptr, 0);   // deterministic regardless of test order
+  TextEntryApplet t; Harness h(&t);
+  t.onChar('h'); t.onChar('i');
+  Canvas c(&h.d, 0);
+  t.onRender(c);
+  bool found = false;
+  for (auto& r : h.d.rects) {
+    if (r.x == 0 && r.y == 0 && r.w == c.width() && r.h == c.height()) { found = true; break; }
+  }
+  EXPECT_TRUE(found);
+}
+
 TEST(TextEntryRender, NonEmptyTextIsInsetFromLeftEdge) {
   setEmojiCatalog(nullptr, 0);   // deterministic regardless of test order
   TextEntryApplet t; Harness h(&t);
