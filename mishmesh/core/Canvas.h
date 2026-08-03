@@ -81,6 +81,12 @@ public:
                       const char* str, DisplayDriver::Color c);
   // Height (px) the same wrapped text would occupy, without drawing anything.
   int measureTextWrapped(const mf_font_s* font, int w, const char* str) const;
+  // Pixel origin of the caret before character index charIndex within text
+  // wrapped to width w, using the same mf_wordwrap pass as drawTextWrapped so
+  // line breaks match exactly. charIndex may equal strlen(str) to place a
+  // caret after the last character.
+  void measureWrappedCursor(const mf_font_s* font, int w, const char* str,
+                            uint16_t charIndex, int& outX, int& outY) const;
   // Renders a single glyph (used for icon fonts) at (x,y).
   void drawGlyph(const mf_font_s* font, int x, int y, uint16_t codepoint,
                  DisplayDriver::Color c);

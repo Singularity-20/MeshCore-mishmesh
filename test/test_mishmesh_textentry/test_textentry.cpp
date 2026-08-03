@@ -3,6 +3,8 @@
 #include <cstring>
 #include <mishmesh/applets/TextEntryApplet.h>
 #include <mishmesh/core/AppletHost.h>
+#include <mishmesh/core/Canvas.h>
+#include <mishmesh/text/Fonts.h>
 #include "FakeDisplayDriver.h"
 
 using namespace mishmesh;
@@ -137,6 +139,34 @@ TEST(TextEntry, DiscardConfirmedPopsWithoutCommitting) {
   host.dispatch(InputEvent::Select);   // confirm discard
   EXPECT_EQ(1, host.depth());          // popped
   EXPECT_STREQ("hi", buf);             // source untouched
+}
+
+TEST(TextEntryRender, NonEmptyTextIsInsetFromLeftEdge) {
+  TextEntryApplet t; Harness h(&t);
+  t.onChar('h'); t.onChar('i');
+  Canvas c(&h.d, 0);   // now=0 -> blink-off half of the cycle, so no caret rect to filter out
+  t.onRender(c);
+  ASSERT_FALSE(h.d.fills.empty());
+  for (auto& r : h.d.fills) EXPECT_GE(r.x, 2);   // padX
+}
+
+TEST(TextEntryRender, CaretDrawnAsBarOnBlinkOnFrame) {
+  TextEntryApplet t; Harness h(&t);
+  t.onChar('h'); t.onChar('i');
+  const mf_font_s* f = fontBody();
+
+  Canvas measure(&h.d, 0);
+  int cx, cy;
+  measure.measureWrappedCursor(f, measure.width() - 4, "hi", 2, cx, cy);  // width - 2*padX
+
+  Canvas c(&h.d, 500);   // (500/500)%2 == 1 -> blink-on
+  t.onRender(c);
+
+  bool found = false;
+  for (auto& r : h.d.fills) {
+    if (r.x == 2 + cx && r.y == 1 + cy && r.w == 1 && r.h == c.fontHeight(f)) { found = true; break; }
+  }
+  EXPECT_TRUE(found);
 }
 
 int main(int argc, char** argv) {

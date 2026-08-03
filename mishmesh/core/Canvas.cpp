@@ -2,6 +2,7 @@
 #include <mishmesh/core/UiPrefs.h>
 #include <mcufont.h>
 #include <math.h>
+#include <string.h>
 
 namespace mishmesh {
 
@@ -173,6 +174,43 @@ bool mm_measure_line(mf_str line, uint16_t count, void* state) {
   return true;
 }
 
+struct CursorState {
+  Canvas* c;
+  const mf_font_s* font;
+  const char* base;      // original string, to compute each line's start offset
+  uint16_t targetIndex;
+  int16_t y;
+  int16_t outX, outY;
+  bool found;
+};
+
+// Locates the line containing targetIndex, then measures the in-line prefix
+// width to get its x. A target that falls exactly on a wrap boundary (the
+// last dispatched line's end) is recorded but not stopped on immediately -
+// if the *next* line starts there too, that placement (x=0, next line) wins,
+// so a caret sitting right at a wrap point reads as "start of the new line"
+// rather than dangling after the previous line's trailing space. Stops
+// mf_wordwrap early (return false) once a strict interior match is found.
+bool mm_locate_cursor(mf_str line, uint16_t count, void* state) {
+  CursorState* s = (CursorState*)state;
+  uint16_t lineStart = (uint16_t)(line - s->base);
+  uint16_t lineEnd = (uint16_t)(lineStart + count);
+  bool interior = s->targetIndex >= lineStart && s->targetIndex < lineEnd;
+  bool boundary = s->targetIndex == lineEnd;
+  if (interior || boundary) {
+    uint16_t within = (uint16_t)(s->targetIndex - lineStart);
+    char buf[96];
+    if (within >= sizeof(buf)) within = sizeof(buf) - 1;
+    memcpy(buf, line, within);
+    buf[within] = 0;
+    s->outX = (int16_t)s->c->textWidth(s->font, buf);
+    s->outY = s->y;
+    s->found = true;
+  }
+  s->y += s->font->line_height;
+  return !interior;
+}
+
 }  // namespace
 
 int Canvas::textWidth(const mf_font_s* font, const char* str) const {
@@ -227,6 +265,16 @@ int Canvas::measureTextWrapped(const mf_font_s* font, int w, const char* str) co
   TextState st = { const_cast<Canvas*>(this), font, DisplayDriver::LIGHT, 0, 0 };
   mf_wordwrap(font, w, str, mm_measure_line, &st);
   return st.y;
+}
+
+void Canvas::measureWrappedCursor(const mf_font_s* font, int w, const char* str,
+                                  uint16_t charIndex, int& outX, int& outY) const {
+  outX = 0; outY = 0;
+  if (!font || !str) return;
+  CursorState st = { const_cast<Canvas*>(this), font, str, charIndex, 0, 0, 0, false };
+  mf_wordwrap(font, w, str, mm_locate_cursor, &st);
+  outX = st.found ? st.outX : 0;
+  outY = st.found ? st.outY : st.y;
 }
 
 void Canvas::drawGlyph(const mf_font_s* font, int x, int y, uint16_t codepoint,

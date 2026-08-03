@@ -70,6 +70,7 @@ void TextEntryApplet::confirmAndExit() {
 int TextEntryApplet::onRender(Canvas& c) {
   const Font* f = fontBody();
   int w = c.width(), h = c.height();
+  const int padX = 2, padY = 1;
 
   if (_len == 0 && _title && _title[0]) {
     // Empty buffer: show the configured title as a recessive placeholder, same
@@ -77,32 +78,29 @@ int TextEntryApplet::onRender(Canvas& c) {
     const Font* hf = fontCaption();
     int fh = c.fontHeight(f);
     c.fillRect(0, 0, 1, fh, DisplayDriver::LIGHT);
-    c.drawText(hf, 4, 0, _title, DisplayDriver::LIGHT);
+    c.drawText(hf, 4, padY, _title, DisplayDriver::LIGHT);
     return 500;
   }
 
-  // Blinking cursor is rendered as a marker character woven into the text
-  // itself (rather than a separately-positioned bar), so mcufont's own word
-  // wrap places it correctly with no need to duplicate its line-breaking here.
-  char marker = ((c.now() / 500) % 2) ? '_' : ' ';
-  char scratch[KeypadApplet::KP_MAX + 2];
-  memcpy(scratch, _buf, _cursor);
-  scratch[_cursor] = marker;
-  memcpy(scratch + _cursor + 1, _buf + _cursor, (size_t)(_len - _cursor));
-  scratch[_len + 1] = 0;
+  // Cursor is a real caret bar drawn at its own pixel position (rather than a
+  // marker character woven into the text), located via measureWrappedCursor -
+  // which walks mcufont's own word-wrap pass, so line breaks still match
+  // drawTextWrapped exactly with no need to duplicate its line-breaking here.
+  int textW = w - 2 * padX;
+  int cx, cy;
+  c.measureWrappedCursor(f, textW, _buf, _cursor, cx, cy);
 
-  // Height of the wrapped text up to and including the cursor's own line, to
-  // find how far to scroll so the cursor stays visible - same "draw at its
-  // natural position minus a scroll offset, let the canvas clip do the rest"
-  // idiom MessageThreadApplet uses for its message list.
-  char prefix[KeypadApplet::KP_MAX + 2];
-  memcpy(prefix, _buf, _cursor);
-  prefix[_cursor] = marker;
-  prefix[_cursor + 1] = 0;
-  int cursorBottomY = c.measureTextWrapped(f, w, prefix);
-  int scrollY = cursorBottomY > h ? cursorBottomY - h : 0;
+  // Scroll so the cursor's line stays visible - same "draw at its natural
+  // position minus a scroll offset, let the canvas clip do the rest" idiom
+  // MessageThreadApplet uses for its message list.
+  int cursorBottomY = cy + c.lineHeight(f);
+  int scrollY = cursorBottomY > (h - padY) ? cursorBottomY - (h - padY) : 0;
 
-  c.drawTextWrapped(f, 0, -scrollY, w, scratch, DisplayDriver::LIGHT);
+  c.drawTextWrapped(f, padX, padY - scrollY, textW, _buf, DisplayDriver::LIGHT);
+
+  if ((c.now() / 500) % 2) {   // blink-on half of the cycle
+    c.fillRect(padX + cx, padY + cy - scrollY, 1, c.fontHeight(f), DisplayDriver::LIGHT);
+  }
   return 500;   // blink cadence
 }
 

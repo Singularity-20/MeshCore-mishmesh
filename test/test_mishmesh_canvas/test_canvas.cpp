@@ -231,6 +231,56 @@ TEST(CanvasArc, OuterEdgeHasNoGaps) {
   }
 }
 
+TEST(CanvasWrappedCursor, StartOfTextIsOrigin) {
+  FakeDisplayDriver d;
+  Canvas c(&d);
+  const mf_font_s* f = fontBody();
+  int x, y;
+  c.measureWrappedCursor(f, 1000, "Hello", 0, x, y);
+  EXPECT_EQ(0, x);
+  EXPECT_EQ(0, y);
+}
+
+TEST(CanvasWrappedCursor, MidLineMatchesPrefixWidth) {
+  FakeDisplayDriver d;
+  Canvas c(&d);
+  const mf_font_s* f = fontBody();
+  const char* str = "Hello World";
+  int expectedX = c.textWidth(f, "Hello");
+  int x, y;
+  c.measureWrappedCursor(f, 1000, str, 5, x, y);  // index of the space after "Hello"
+  EXPECT_EQ(expectedX, x);
+  EXPECT_EQ(0, y);
+}
+
+TEST(CanvasWrappedCursor, EndOfTextLandsAfterLastChar) {
+  FakeDisplayDriver d;
+  Canvas c(&d);
+  const mf_font_s* f = fontBody();
+  const char* str = "Hi";
+  int x, y;
+  c.measureWrappedCursor(f, 1000, str, 2, x, y);
+  EXPECT_EQ(c.textWidth(f, "Hi"), x);
+  EXPECT_EQ(0, y);
+}
+
+TEST(CanvasWrappedCursor, WrappedSecondLineUsesInLineOffsetNotFullPrefix) {
+  FakeDisplayDriver d;
+  Canvas c(&d);
+  const mf_font_s* f = fontBody();
+  const char* str = "Hello World";
+  int helloW = c.textWidth(f, "Hello");
+  int w = helloW + 2;   // fits "Hello" but not "Hello World"
+  int x, y;
+  // Index 6 = start of "World", just after the wrap-consumed space.
+  c.measureWrappedCursor(f, w, str, 6, x, y);
+  EXPECT_EQ(c.lineHeight(f), y);   // landed on the second line
+  // The old marker-weaving approach effectively used the full prefix width
+  // ("Hello " at full-string scale); the real per-line x must be far smaller,
+  // since "World" starts its own line.
+  EXPECT_LT(x, helloW);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
