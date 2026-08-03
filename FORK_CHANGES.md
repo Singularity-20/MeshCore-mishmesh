@@ -64,6 +64,15 @@ unless noted:
   native unit tests against a synthetic fake catalog instead (open/close,
   insert, cancel, codepoint-aware nav/backspace, paging). Needs a real
   on-device pass once the atlas is available.
+- **Reworded field titles; persistent header tried and reverted.** The
+  ~18 field titles (e.g. "Join hashtag") were reworded into fuller
+  descriptive phrases ("Enter hashtag channel name") shown as the
+  empty-state placeholder. A persistent always-on header (visible even
+  while editing, not just pre-typing) was also tried, but reverted after
+  hardware testing: once the field scrolled, wrapped text ran straight
+  through the header row (no clip existed between them), and the
+  always-on look wasn't well liked regardless. Kept the reworded
+  placeholder text; dropped the persistent-header rendering change.
 
 ## Fixed: 2048 didn't respond to CardKB arrow keys
 
