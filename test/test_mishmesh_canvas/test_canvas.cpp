@@ -281,6 +281,51 @@ TEST(CanvasWrappedCursor, WrappedSecondLineUsesInLineOffsetNotFullPrefix) {
   EXPECT_LT(x, helloW);
 }
 
+// Regression coverage for a real hardware bug: mf_wordwrap's dispatched
+// `count` is a CHARACTER count, not a byte count - identical to a byte count
+// for plain ASCII (masking the bug for a long time), but diverging the
+// moment a multi-byte UTF-8 codepoint (e.g. an emoji picked up in a contact
+// name synced from a device that does have the emoji atlas) appears in the
+// line, since targetIndex is always a byte offset into the buffer.
+
+TEST(CanvasWrappedCursor, EmojiAtEndOfTextStillLandsOnFirstLine) {
+  FakeDisplayDriver d;
+  Canvas c(&d);
+  const mf_font_s* f = fontBody();
+  const char* str = "Steve\xF0\x9F\x98\x80";   // "Steve" + a 4-byte emoji codepoint
+  int x, y;
+  c.measureWrappedCursor(f, 1000, str, (uint16_t)strlen(str), x, y);
+  EXPECT_EQ(0, y);   // must stay on the single (unwrapped) line, not a phantom line 2
+  EXPECT_EQ(c.textWidth(f, str), x);
+}
+
+TEST(CanvasWrappedCursor, MidStringCursorAfterEmojiUsesByteOffsetNotCharCount) {
+  FakeDisplayDriver d;
+  Canvas c(&d);
+  const mf_font_s* f = fontBody();
+  const char* str = "\xF0\x9F\x98\x80 Steve";   // emoji (4 bytes) + " Steve"
+  uint16_t afterEmoji = 4;                      // byte index right after the emoji
+  int x, y;
+  c.measureWrappedCursor(f, 1000, str, afterEmoji, x, y);
+  EXPECT_EQ(0, y);
+  char prefix[8]; memcpy(prefix, str, 4); prefix[4] = 0;
+  EXPECT_EQ(c.textWidth(f, prefix), x);
+}
+
+TEST(CanvasWrappedCursor, EmojiBeforeWrapPointKeepsSecondLineByteOffsetCorrect) {
+  FakeDisplayDriver d;
+  Canvas c(&d);
+  const mf_font_s* f = fontBody();
+  const char* str = "\xF0\x9F\x98\x80 Hello World";   // emoji + " Hello World"
+  int prefixW = c.textWidth(f, "\xF0\x9F\x98\x80 Hello");
+  int w = prefixW + 2;   // fits "<emoji> Hello" but not "...World"
+  uint16_t worldStart = 4 + 7;   // emoji(4) + " Hello "(7) = byte index of 'W'
+  int x, y;
+  c.measureWrappedCursor(f, w, str, worldStart, x, y);
+  EXPECT_EQ(c.lineHeight(f), y);   // wrapped onto the second line
+  EXPECT_EQ(0, x);                 // "World" starts its own line
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

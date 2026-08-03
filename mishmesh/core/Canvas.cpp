@@ -184,6 +184,25 @@ struct CursorState {
   bool found;
 };
 
+// mf_wordwrap's dispatched `count` is a CHARACTER count, not a byte count -
+// identical to a byte count for plain ASCII (which is why this went unnoticed
+// for a long time), but diverges the moment any multi-byte UTF-8 codepoint
+// (e.g. an emoji in a contact/device name) appears in the line. targetIndex
+// here is always a byte offset (TextEntryApplet's _cursor indexes _buf in
+// bytes), so it has to be compared against a byte-based line end, not the
+// raw character count. Walks `count` codepoints forward from `line` to get
+// that byte length.
+static uint16_t mm_utf8CodepointsToBytes(const char* p, uint16_t count) {
+  uint16_t bytes = 0;
+  for (uint16_t i = 0; i < count; i++) {
+    unsigned char b = (unsigned char)p[bytes];
+    uint16_t adv = (b < 0x80) ? 1 : ((b >> 5) == 0x6) ? 2
+                 : ((b >> 4) == 0xE) ? 3 : ((b >> 3) == 0x1E) ? 4 : 1;
+    bytes = (uint16_t)(bytes + adv);
+  }
+  return bytes;
+}
+
 // Locates the line containing targetIndex, then measures the in-line prefix
 // width to get its x. A target that falls exactly on a wrap boundary (the
 // last dispatched line's end) is recorded but not stopped on immediately -
@@ -194,7 +213,7 @@ struct CursorState {
 bool mm_locate_cursor(mf_str line, uint16_t count, void* state) {
   CursorState* s = (CursorState*)state;
   uint16_t lineStart = (uint16_t)(line - s->base);
-  uint16_t lineEnd = (uint16_t)(lineStart + count);
+  uint16_t lineEnd = (uint16_t)(lineStart + mm_utf8CodepointsToBytes(line, count));
   bool interior = s->targetIndex >= lineStart && s->targetIndex < lineEnd;
   bool boundary = s->targetIndex == lineEnd;
   if (interior || boundary) {
