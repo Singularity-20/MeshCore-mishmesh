@@ -39,8 +39,7 @@ joystick - you don't need one to keep using the other.
 
 ## Fixed: 2048 didn't respond to CardKB arrow keys
 
-Root cause (confirmed on hardware, not the original I2C-latency guess): the
-CardKB module's key register reads back `0` again immediately after being
+Root cause: the CardKB module's key register reads back `0` again immediately after being
 read over I2C, even while the key is still physically held down - there is no
 continuous "held" byte to observe, only a one-shot pulse per press. That's
 fine for menu navigation (which reacts to discrete press events), but 2048
