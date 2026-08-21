@@ -26,6 +26,11 @@ below.
 > adds CardKB (I2C keyboard) support on top of upstream mishmesh - see
 > [FORK_CHANGES.md](FORK_CHANGES.md) for what's changed here specifically.
 
+**Part of MeshPod**, a standalone nRF-based MeshCore companion device (Wio Tracker L1, CardKB,
+OLED, solar) — this fork is the firmware side; the hardware includes a custom adapter PCB
+(first-ever PCB design, schematic through routed/DRC-clean layout, completed in one sitting).
+See [Devin's project portfolio](https://github.com/Singularity-20/portfolio) for the full build story.
+
 ### Screens
 
 <table>
