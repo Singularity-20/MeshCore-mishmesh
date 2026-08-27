@@ -15,8 +15,8 @@ def create_uf2_action(source, target, env):
             '"$PYTHONEXE"',
             '"$PROJECT_DIR/bin/uf2conv/uf2conv.py"',
             '-f', '0xADA52840',
-            '-c', firmware_hex,
-            '-o', uf2_file,
+            '-c', '"%s"' % firmware_hex,
+            '-o', '"%s"' % uf2_file,
         ]
     )
     env.Execute(uf2_cmd)
