@@ -28,7 +28,11 @@ below.
 
 **Part of MeshPod**, a standalone nRF-based MeshCore companion device (Wio Tracker L1, CardKB,
 OLED, solar) — this fork is the firmware side; the hardware includes a custom adapter PCB
-(first-ever PCB design, schematic through routed/DRC-clean layout, completed in one sitting).
+(first-ever PCB design, schematic through routed/DRC-clean layout, completed in one sitting,
+now hand-soldered and test-fit to the OLED). Bring-up is in progress: a 3.3V rail assumption
+on the board turned out wrong and got worked around with a jumper wire, and the display now
+lights up correctly over I2C, though init is still intermittent while a reliability fix
+(decoupling capacitors) gets tried next.
 See [Devin's project portfolio](https://github.com/Singularity-20/portfolio) for the full build story.
 
 ### Screens
