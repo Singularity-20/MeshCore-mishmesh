@@ -82,7 +82,7 @@
 #define PIN_WIRE1_SDA           (18)
 #define PIN_WIRE1_SCL           (17)
 #define I2C_NO_RESCAN
-#define DISPLAY_ADDRESS         0x3D  // SH1106 OLED I2C address
+#define DISPLAY_ADDRESS         0x3C  // [mishmesh] SSD1309 OLED (0X78 address jumper populated on the breakout, was 0x3D/SH1106 stock)
 
 // GPS L76KB
 #define GPS_BAUDRATE            9600

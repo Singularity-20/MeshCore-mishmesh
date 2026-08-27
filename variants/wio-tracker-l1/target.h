@@ -12,7 +12,7 @@
   #if defined(WIO_TRACKER_L1_EINK)
     #include <helpers/ui/GxEPDDisplay.h>
   #else
-    #include <helpers/ui/SH1106Display.h>
+    #include <helpers/ui/SSD1306Display.h>
   #endif
   #include <helpers/ui/MomentaryButton.h>
 #endif
